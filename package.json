@@ -4,18 +4,45 @@
   "description": "Extensions for JavaScript HTTP libraries to support sending and receiving custom proxy headers during HTTPS CONNECT tunneling",
   "type": "module",
   "main": "index.js",
+  "types": "types/index.d.ts",
   "exports": {
-    ".": "./index.js",
-    "./axios": "./lib/axios-proxy.js",
-    "./node-fetch": "./lib/node-fetch-proxy.js",
-    "./got": "./lib/got-proxy.js",
-    "./undici": "./lib/undici-proxy.js",
-    "./superagent": "./lib/superagent-proxy.js"
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./index.js"
+    },
+    "./axios": {
+      "types": "./types/index.d.ts",
+      "import": "./lib/axios-proxy.js"
+    },
+    "./node-fetch": {
+      "types": "./types/index.d.ts",
+      "import": "./lib/node-fetch-proxy.js"
+    },
+    "./got": {
+      "types": "./types/index.d.ts",
+      "import": "./lib/got-proxy.js"
+    },
+    "./undici": {
+      "types": "./types/index.d.ts",
+      "import": "./lib/undici-proxy.js"
+    },
+    "./superagent": {
+      "types": "./types/index.d.ts",
+      "import": "./lib/superagent-proxy.js"
+    }
   },
+  "files": [
+    "index.js",
+    "lib/",
+    "types/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node test/test_proxy_headers.js",
     "test:verbose": "node test/test_proxy_headers.js -v",
-    "lint": "eslint lib test"
+    "lint": "eslint lib test",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "proxy",
@@ -28,17 +55,27 @@
     "fetch",
     "got",
     "undici",
-    "proxymesh"
+    "superagent",
+    "proxymesh",
+    "web-scraping",
+    "http-client"
   ],
-  "author": "ProxyMesh",
+  "author": {
+    "name": "ProxyMesh",
+    "url": "https://proxymesh.com"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/proxymesh/javascript-proxy-headers.git"
+    "url": "git+https://github.com/proxymeshai/javascript-proxy-headers.git"
   },
-  "homepage": "https://github.com/proxymesh/javascript-proxy-headers#readme",
+  "homepage": "https://javascript-proxy-headers.readthedocs.io/",
   "bugs": {
-    "url": "https://github.com/proxymesh/javascript-proxy-headers/issues"
+    "url": "https://github.com/proxymeshai/javascript-proxy-headers/issues"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://proxymesh.com"
   },
   "engines": {
     "node": ">=18.0.0"

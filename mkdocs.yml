@@ -1,0 +1,60 @@
+site_name: JavaScript Proxy Headers
+site_description: Extensions for JavaScript HTTP libraries to support custom proxy headers during HTTPS CONNECT tunneling
+site_author: ProxyMesh
+site_url: https://javascript-proxy-headers.readthedocs.io/
+
+repo_name: proxymeshai/javascript-proxy-headers
+repo_url: https://github.com/proxymeshai/javascript-proxy-headers
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Libraries:
+    - axios: axios.md
+    - node-fetch: node-fetch.md
+    - got: got.md
+    - undici: undici.md
+    - superagent: superagent.md
+  - Core API: core-api.md
+  - Testing: testing.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/proxymeshai/javascript-proxy-headers
+    - icon: fontawesome/brands/npm
+      link: https://www.npmjs.com/package/javascript-proxy-headers
+  generator: false
+
+copyright: Copyright &copy; 2026 ProxyMesh

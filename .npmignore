@@ -1,0 +1,40 @@
+# Development files
+.git/
+.github/
+.gitignore
+
+# Documentation source
+docs/
+mkdocs.yml
+.readthedocs.yaml
+
+# Research and planning
+LIBRARY_RESEARCH.md
+IMPLEMENTATION_PRIORITY.md
+
+# Test files
+test/
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development config
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts not needed
+*.tgz
