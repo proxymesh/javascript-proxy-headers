@@ -1,0 +1,66 @@
+{
+  "name": "javascript-proxy-headers",
+  "version": "0.1.0",
+  "description": "Extensions for JavaScript HTTP libraries to support sending and receiving custom proxy headers during HTTPS CONNECT tunneling",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./axios": "./lib/axios-proxy.js",
+    "./node-fetch": "./lib/node-fetch-proxy.js",
+    "./got": "./lib/got-proxy.js",
+    "./undici": "./lib/undici-proxy.js",
+    "./superagent": "./lib/superagent-proxy.js"
+  },
+  "scripts": {
+    "test": "node test/run_tests.js",
+    "lint": "eslint lib test"
+  },
+  "keywords": [
+    "proxy",
+    "http",
+    "https",
+    "connect",
+    "tunnel",
+    "headers",
+    "axios",
+    "fetch",
+    "got",
+    "undici",
+    "proxymesh"
+  ],
+  "author": "ProxyMesh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/proxymesh/javascript-proxy-headers.git"
+  },
+  "homepage": "https://github.com/proxymesh/javascript-proxy-headers#readme",
+  "bugs": {
+    "url": "https://github.com/proxymesh/javascript-proxy-headers/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "axios": "^1.0.0",
+    "got": "^12.0.0 || ^13.0.0 || ^14.0.0",
+    "node-fetch": "^3.0.0",
+    "superagent": "^8.0.0 || ^9.0.0 || ^10.0.0",
+    "undici": "^5.0.0 || ^6.0.0 || ^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "axios": { "optional": true },
+    "got": { "optional": true },
+    "node-fetch": { "optional": true },
+    "superagent": { "optional": true },
+    "undici": { "optional": true }
+  },
+  "devDependencies": {
+    "axios": "^1.7.0",
+    "got": "^14.4.0",
+    "node-fetch": "^3.3.0",
+    "superagent": "^10.1.0",
+    "undici": "^7.2.0"
+  }
+}
