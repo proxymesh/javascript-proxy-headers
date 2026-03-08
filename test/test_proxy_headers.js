@@ -189,7 +189,9 @@ const AVAILABLE_TESTS = {
                 proxyHeaders: config.proxyHeadersToSend,
             });
 
-            const response = await client.get(config.testUrl);
+            const response = await client.get(config.testUrl, {
+                validateStatus: () => true,
+            });
             const headerValue = checkHeader(response.headers, config.proxyHeader);
 
             if (headerValue) {
@@ -232,6 +234,7 @@ const AVAILABLE_TESTS = {
             const client = await createProxyGot({
                 proxy: config.proxyUrl,
                 proxyHeaders: config.proxyHeadersToSend,
+                gotOptions: { throwHttpErrors: false },
             });
 
             const response = await client(config.testUrl);
@@ -279,7 +282,7 @@ const AVAILABLE_TESTS = {
                 proxyHeaders: config.proxyHeadersToSend,
             });
 
-            const response = await client.get(config.testUrl);
+            const response = await client.get(config.testUrl).ok(() => true);
             const headerValue = checkHeader(response.headers, config.proxyHeader);
 
             if (headerValue) {

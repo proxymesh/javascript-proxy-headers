@@ -39,7 +39,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node test/test_proxy_headers.js",
+    "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent",
     "test:verbose": "node test/test_proxy_headers.js -v",
     "lint": "eslint lib test",
     "prepublishOnly": "npm test"
