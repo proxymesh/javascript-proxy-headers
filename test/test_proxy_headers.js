@@ -128,6 +128,20 @@ function checkHeader(headers, headerName) {
     return null;
 }
 
+/**
+ * When SEND_PROXY_HEADER and SEND_PROXY_VALUE are set and we're checking the same header,
+ * the proxy response must echo that value (e.g. X-ProxyMesh-IP).
+ * @returns {string|null} Error message if expectation not met, null if OK or N/A.
+ */
+function validateSentHeaderValue(config, headerValue) {
+    if (!config.sendProxyHeader || !config.sendProxyValue) return null;
+    if (config.proxyHeader.toLowerCase() !== config.sendProxyHeader.toLowerCase()) return null;
+    const expected = String(config.sendProxyValue).trim();
+    const actual = headerValue ? String(headerValue).trim() : '';
+    if (actual === expected) return null;
+    return `Expected ${config.proxyHeader} to equal ${expected} (sent in request) but got ${actual}`;
+}
+
 const AVAILABLE_TESTS = {
     async core(config) {
         try {
@@ -159,7 +173,10 @@ const AVAILABLE_TESTS = {
                             ? checkHeader(capturedHeaders, config.proxyHeader)
                             : null;
 
-                        if (headerValue) {
+                        const sentErr = validateSentHeaderValue(config, headerValue);
+                        if (sentErr) {
+                            resolve(new TestResult('core', false, null, sentErr, res.statusCode));
+                        } else if (headerValue) {
                             resolve(new TestResult('core', true, headerValue, null, res.statusCode));
                         } else {
                             resolve(new TestResult('core', false, null,
@@ -189,9 +206,13 @@ const AVAILABLE_TESTS = {
                 proxyHeaders: config.proxyHeadersToSend,
             });
 
-            const response = await client.get(config.testUrl);
+            const response = await client.get(config.testUrl, {
+                validateStatus: () => true,
+            });
             const headerValue = checkHeader(response.headers, config.proxyHeader);
 
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('axios', false, null, sentErr);
             if (headerValue) {
                 return new TestResult('axios', true, headerValue, null, response.status);
             }
@@ -214,6 +235,8 @@ const AVAILABLE_TESTS = {
 
             const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
 
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('node-fetch', false, null, sentErr);
             if (headerValue) {
                 return new TestResult('node-fetch', true, headerValue, null, response.status);
             }
@@ -232,11 +255,14 @@ const AVAILABLE_TESTS = {
             const client = await createProxyGot({
                 proxy: config.proxyUrl,
                 proxyHeaders: config.proxyHeadersToSend,
+                gotOptions: { throwHttpErrors: false },
             });
 
             const response = await client(config.testUrl);
             const headerValue = checkHeader(response.headers, config.proxyHeader);
 
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('got', false, null, sentErr);
             if (headerValue) {
                 return new TestResult('got', true, headerValue, null, response.statusCode);
             }
@@ -259,6 +285,8 @@ const AVAILABLE_TESTS = {
 
             const headerValue = checkHeader(proxyHeaders, config.proxyHeader);
 
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('undici', false, null, sentErr);
             if (headerValue) {
                 return new TestResult('undici', true, headerValue, null, statusCode);
             }
@@ -279,9 +307,11 @@ const AVAILABLE_TESTS = {
                 proxyHeaders: config.proxyHeadersToSend,
             });
 
-            const response = await client.get(config.testUrl);
+            const response = await client.get(config.testUrl).ok(() => true);
             const headerValue = checkHeader(response.headers, config.proxyHeader);
 
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('superagent', false, null, sentErr);
             if (headerValue) {
                 return new TestResult('superagent', true, headerValue, null, response.status);
             }
