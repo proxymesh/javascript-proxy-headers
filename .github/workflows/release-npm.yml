@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  packages: write
 
 jobs:
   publish:
@@ -36,5 +37,19 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts
 
-      - name: Publish
+      - name: Publish to npm
         run: npm publish --access public --provenance
+
+      - name: Publish to GitHub Packages (requires scoped package name)
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PKG_NAME="$(node -p "require('./package.json').name")"
+          if [[ "$PKG_NAME" != @*/* ]]; then
+            echo "Skipping GitHub Packages publish: package name '$PKG_NAME' is not scoped (expected '@OWNER/name')."
+            exit 0
+          fi
+          npm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
+          npm publish --registry=https://npm.pkg.github.com --provenance
