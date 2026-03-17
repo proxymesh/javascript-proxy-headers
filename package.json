@@ -42,6 +42,7 @@
     "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent",
     "test:verbose": "node test/test_proxy_headers.js -v",
     "lint": "eslint lib test",
+    "prepublishOnly": "node -e \"const p=process.env.PROXY_URL||process.env.HTTPS_PROXY||process.env.https_proxy; if(!p){console.log('prepublishOnly: skipping proxy tests (set PROXY_URL/HTTPS_PROXY to enable)'); process.exit(0);} require('child_process').execSync('npm test',{stdio:'inherit'});\""
   },
   "keywords": [
     "proxy",
@@ -95,6 +96,7 @@
   },
   "devDependencies": {
     "axios": "^1.7.0",
+    "eslint": "^9.0.0",
     "got": "^14.4.0",
     "node-fetch": "^3.3.0",
     "superagent": "^10.1.0",
