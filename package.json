@@ -67,11 +67,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/proxymeshai/javascript-proxy-headers.git"
+    "url": "git+https://github.com/proxymesh/javascript-proxy-headers.git"
   },
-  "homepage": "https://javascript-proxy-headers.readthedocs.io/",
+  "homepage": "https://github.com/proxymesh/javascript-proxy-headers",
   "bugs": {
-    "url": "https://github.com/proxymeshai/javascript-proxy-headers/issues"
+    "url": "https://github.com/proxymesh/javascript-proxy-headers/issues"
   },
   "funding": {
     "type": "individual",
