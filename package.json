@@ -42,7 +42,6 @@
     "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent",
     "test:verbose": "node test/test_proxy_headers.js -v",
     "lint": "eslint lib test",
-    "prepublishOnly": "npm test"
   },
   "keywords": [
     "proxy",
@@ -67,11 +66,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/proxymeshai/javascript-proxy-headers.git"
+    "url": "git+https://github.com/proxymesh/javascript-proxy-headers.git"
   },
-  "homepage": "https://javascript-proxy-headers.readthedocs.io/",
+  "homepage": "https://github.com/proxymesh/javascript-proxy-headers",
   "bugs": {
-    "url": "https://github.com/proxymeshai/javascript-proxy-headers/issues"
+    "url": "https://github.com/proxymesh/javascript-proxy-headers/issues"
   },
   "funding": {
     "type": "individual",
