@@ -38,15 +38,13 @@ jobs:
           fi
 
       - name: Install dependencies
-        run: npm install --ignore-scripts
+        run: npm install --ignore-scripts --no-package-lock
 
       - name: Publish to npm
         run: npm publish --access public --provenance
 
       - name: Publish to JSR
         run: |
-          # jsr publish aborts when the working tree has uncommitted changes (e.g. an untracked package-lock created by npm install).
-          rm -f package-lock.json
           # Trusted publishing should authenticate via OIDC; token is intentionally not required here.
           npx jsr publish --provenance
 
