@@ -47,5 +47,6 @@ jobs:
         run: |
           # jsr publish aborts when the working tree has uncommitted changes (e.g. an untracked package-lock created by npm install).
           rm -f package-lock.json
-          npx jsr publish --token "${{ secrets.JSR_TOKEN }}" --allow-slow-types --provenance
+          # Trusted publishing should authenticate via OIDC; token is intentionally not required here.
+          npx jsr publish --allow-slow-types --provenance
 
