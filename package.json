@@ -11,23 +11,23 @@
       "import": "./index.js"
     },
     "./axios": {
-      "types": "./types/index.d.ts",
+      "types": "./types/axios.d.ts",
       "import": "./lib/axios-proxy.js"
     },
     "./node-fetch": {
-      "types": "./types/index.d.ts",
+      "types": "./types/node-fetch.d.ts",
       "import": "./lib/node-fetch-proxy.js"
     },
     "./got": {
-      "types": "./types/index.d.ts",
+      "types": "./types/got.d.ts",
       "import": "./lib/got-proxy.js"
     },
     "./undici": {
-      "types": "./types/index.d.ts",
+      "types": "./types/undici.d.ts",
       "import": "./lib/undici-proxy.js"
     },
     "./superagent": {
-      "types": "./types/index.d.ts",
+      "types": "./types/superagent.d.ts",
       "import": "./lib/superagent-proxy.js"
     }
   },
