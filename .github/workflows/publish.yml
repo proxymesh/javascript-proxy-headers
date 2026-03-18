@@ -44,5 +44,8 @@ jobs:
         run: npm publish --access public --provenance
 
       - name: Publish to JSR
-        run: npx jsr publish
+        run: |
+          # jsr publish aborts when the working tree has uncommitted changes (e.g. an untracked package-lock created by npm install).
+          rm -f package-lock.json
+          npx jsr publish --token "${{ secrets.JSR_TOKEN }}" --allow-slow-types --provenance
 
