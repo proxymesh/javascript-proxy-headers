@@ -1,6 +1,6 @@
 {
   "name": "javascript-proxy-headers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Extensions for JavaScript HTTP libraries to support sending and receiving custom proxy headers during HTTPS CONNECT tunneling",
   "type": "module",
   "main": "index.js",
