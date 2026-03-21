@@ -60,6 +60,7 @@
   ],
   "scripts": {
     "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent ky wretch make-fetch-happen needle typed-rest-client",
+    "test:run": "node run_tests.js",
     "test:verbose": "node test/test_proxy_headers.js -v",
     "test:ts": "tsx test/test_proxy_headers.ts core axios node-fetch got undici superagent ky wretch make-fetch-happen needle typed-rest-client",
     "test:ts:verbose": "tsx test/test_proxy_headers.ts -v",
