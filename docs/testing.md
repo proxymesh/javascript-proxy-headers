@@ -18,8 +18,17 @@ npm test
 # Run with verbose output (shows header values)
 npm run test:verbose
 
+# TypeScript harness (same modules)
+npm run test:ts
+
+# Typecheck only (no network)
+npm run test:types
+
 # Run specific modules
 node test/test_proxy_headers.js axios undici
+
+# From repo root (same as npm test)
+node run_tests.js -v
 
 # List available modules
 node test/test_proxy_headers.js -l
@@ -56,7 +65,7 @@ Proxy URL:       http://user:****@proxy:8080
 Test URL:        https://httpbin.org/ip
 Check Header:    X-ProxyMesh-IP
 Send Header:     X-ProxyMesh-Country: US
-Modules:         core, axios, node-fetch, got, undici, superagent
+Modules:         core, axios, node-fetch, got, undici, superagent, ky, wretch, make-fetch-happen, needle, typed-rest-client
 ============================================================
 
 Testing core... OK
@@ -65,6 +74,11 @@ Testing node-fetch... OK
 Testing got... OK
 Testing undici... OK
 Testing superagent... OK
+Testing ky... OK
+Testing wretch... OK
+Testing make-fetch-happen... OK
+Testing needle... OK
+Testing typed-rest-client... OK
 
 ============================================================
 Results
@@ -75,8 +89,13 @@ Results
 [PASS] got
 [PASS] undici
 [PASS] superagent
+[PASS] ky
+[PASS] wretch
+[PASS] make-fetch-happen
+[PASS] needle
+[PASS] typed-rest-client
 ============================================================
-Passed: 6/6
+Passed: 11/11
 All tests passed!
 ```
 
@@ -152,14 +171,6 @@ console.log('POST response:', await r3.json());
 ```
 
 ## Debugging
-
-### Enable Debug Output
-
-Set the `DEBUG` environment variable:
-
-```bash
-DEBUG=1 npm test
-```
 
 ### Inspect CONNECT Request/Response
 

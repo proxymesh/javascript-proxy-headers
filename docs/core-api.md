@@ -203,6 +203,8 @@ import { fetch, setGlobalDispatcher, Agent } from 'undici';
 
 ### With needle
 
+For normal use, prefer the [needle adapter](needle.md) (`proxyNeedleGet` / `createProxyNeedle`), which merges CONNECT headers onto the response. To wire the agent yourself:
+
 ```javascript
 import { ProxyHeadersAgent } from 'javascript-proxy-headers';
 import needle from 'needle';
@@ -211,7 +213,6 @@ const agent = new ProxyHeadersAgent('http://proxy:8080', {
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
 
-// needle accepts custom agent
 needle.get('https://httpbin.org/ip', { agent }, (err, resp) => {
     console.log(resp.body);
     console.log(agent.lastProxyHeaders);
