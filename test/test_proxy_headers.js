@@ -322,6 +322,131 @@ const AVAILABLE_TESTS = {
             return new TestResult('superagent', false, null, err.message);
         }
     },
+
+    async ky(config) {
+        try {
+            const { createProxyKy } = await import('../lib/ky-proxy.js');
+
+            const api = await createProxyKy({
+                proxy: config.proxyUrl,
+                proxyHeaders: config.proxyHeadersToSend,
+            });
+
+            const response = await api(config.testUrl);
+            const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
+
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('ky', false, null, sentErr);
+            if (headerValue) {
+                return new TestResult('ky', true, headerValue, null, response.status);
+            }
+            return new TestResult('ky', false, null,
+                `Header '${config.proxyHeader}' not found in proxy response`,
+                response.status);
+        } catch (err) {
+            return new TestResult('ky', false, null, err.message);
+        }
+    },
+
+    async wretch(config) {
+        try {
+            const { createProxyWretch } = await import('../lib/wretch-proxy.js');
+
+            const wretch = await createProxyWretch({
+                proxy: config.proxyUrl,
+                proxyHeaders: config.proxyHeadersToSend,
+            });
+
+            const response = await wretch(config.testUrl).get().res();
+            const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
+
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('wretch', false, null, sentErr);
+            if (headerValue) {
+                return new TestResult('wretch', true, headerValue, null, response.status);
+            }
+            return new TestResult('wretch', false, null,
+                `Header '${config.proxyHeader}' not found in proxy response`,
+                response.status);
+        } catch (err) {
+            return new TestResult('wretch', false, null, err.message);
+        }
+    },
+
+    async 'make-fetch-happen'(config) {
+        try {
+            const { createProxyMakeFetchHappen } = await import('../lib/make-fetch-happen-proxy.js');
+
+            const fetch = createProxyMakeFetchHappen({
+                proxy: config.proxyUrl,
+                proxyHeaders: config.proxyHeadersToSend,
+            });
+
+            const response = await fetch(config.testUrl);
+            const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
+
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('make-fetch-happen', false, null, sentErr);
+            if (headerValue) {
+                return new TestResult('make-fetch-happen', true, headerValue, null, response.status);
+            }
+            return new TestResult('make-fetch-happen', false, null,
+                `Header '${config.proxyHeader}' not found in proxy response`,
+                response.status);
+        } catch (err) {
+            return new TestResult('make-fetch-happen', false, null, err.message);
+        }
+    },
+
+    async needle(config) {
+        try {
+            const { proxyNeedleGet } = await import('../lib/needle-proxy.js');
+
+            const res = await proxyNeedleGet(config.testUrl, {
+                proxy: config.proxyUrl,
+                proxyHeaders: config.proxyHeadersToSend,
+            });
+
+            const headerValue = checkHeader(res.headers, config.proxyHeader);
+
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('needle', false, null, sentErr);
+            if (headerValue) {
+                return new TestResult('needle', true, headerValue, null, res.statusCode);
+            }
+            return new TestResult('needle', false, null,
+                `Header '${config.proxyHeader}' not found in response`,
+                res.statusCode);
+        } catch (err) {
+            return new TestResult('needle', false, null, err.message);
+        }
+    },
+
+    async 'typed-rest-client'(config) {
+        try {
+            const { createProxyRestClient } = await import('../lib/typed-rest-client-proxy.js');
+
+            const client = createProxyRestClient({
+                userAgent: 'javascript-proxy-headers-test',
+                proxy: config.proxyUrl,
+                proxyHeaders: config.proxyHeadersToSend,
+            });
+
+            const result = await client.get(config.testUrl);
+            const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders, config.proxyHeader);
+
+            const sentErr = validateSentHeaderValue(config, headerValue);
+            if (sentErr) return new TestResult('typed-rest-client', false, null, sentErr);
+            if (headerValue) {
+                return new TestResult('typed-rest-client', true, headerValue, null, result.statusCode);
+            }
+            return new TestResult('typed-rest-client', false, null,
+                `Header '${config.proxyHeader}' not found in proxy response`,
+                result.statusCode);
+        } catch (err) {
+            return new TestResult('typed-rest-client', false, null, err.message);
+        }
+    },
 };
 
 // =============================================================================
