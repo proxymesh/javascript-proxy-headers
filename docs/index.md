@@ -31,6 +31,11 @@ This library solves both problems for popular JavaScript HTTP libraries.
 | [got](got.md) | `javascript-proxy-headers/got` | Human-friendly HTTP client |
 | [undici](undici.md) | `javascript-proxy-headers/undici` | Fast HTTP client (Node.js core) |
 | [superagent](superagent.md) | `javascript-proxy-headers/superagent` | Flexible HTTP client |
+| [ky](ky.md) | `javascript-proxy-headers/ky` | Tiny fetch wrapper (via node-fetch + agent) |
+| [wretch](wretch.md) | `javascript-proxy-headers/wretch` | Fetch wrapper (global fetch polyfill) |
+| [make-fetch-happen](make-fetch-happen.md) | `javascript-proxy-headers/make-fetch-happen` | npm-style fetch (cache, retries, proxy) |
+| [needle](needle.md) | `javascript-proxy-headers/needle` | Lean HTTP client |
+| [typed-rest-client](typed-rest-client.md) | `javascript-proxy-headers/typed-rest-client` | Azure / DevOps–style REST client |
 
 ## Quick Start
 
@@ -43,7 +48,7 @@ npm install javascript-proxy-headers
 Then install the HTTP library you want to use:
 
 ```bash
-npm install axios  # or node-fetch, got, undici, superagent
+npm install axios  # or node-fetch, got, undici, superagent, ky, wretch, …
 ```
 
 !!! note
@@ -84,4 +89,4 @@ We at [ProxyMesh](https://proxymesh.com) created these extension modules to supp
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/proxymeshai/javascript-proxy-headers/blob/main/LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/proxymesh/javascript-proxy-headers/blob/main/LICENSE) for details.

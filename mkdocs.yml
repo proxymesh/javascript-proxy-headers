@@ -3,8 +3,8 @@ site_description: Extensions for JavaScript HTTP libraries to support custom pro
 site_author: ProxyMesh
 site_url: https://javascript-proxy-headers.readthedocs.io/
 
-repo_name: proxymeshai/javascript-proxy-headers
-repo_url: https://github.com/proxymeshai/javascript-proxy-headers
+repo_name: proxymesh/javascript-proxy-headers
+repo_url: https://github.com/proxymesh/javascript-proxy-headers
 
 theme:
   name: material
@@ -46,13 +46,18 @@ nav:
     - got: got.md
     - undici: undici.md
     - superagent: superagent.md
+    - ky: ky.md
+    - wretch: wretch.md
+    - make-fetch-happen: make-fetch-happen.md
+    - needle: needle.md
+    - typed-rest-client: typed-rest-client.md
   - Core API: core-api.md
   - Testing: testing.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/proxymeshai/javascript-proxy-headers
+      link: https://github.com/proxymesh/javascript-proxy-headers
     - icon: fontawesome/brands/npm
       link: https://www.npmjs.com/package/javascript-proxy-headers
   generator: false
