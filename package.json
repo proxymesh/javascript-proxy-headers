@@ -1,6 +1,6 @@
 {
   "name": "javascript-proxy-headers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Extensions for JavaScript HTTP libraries to support sending and receiving custom proxy headers during HTTPS CONNECT tunneling",
   "type": "module",
   "main": "index.js",
@@ -29,6 +29,26 @@
     "./superagent": {
       "types": "./types/superagent.d.ts",
       "import": "./lib/superagent-proxy.js"
+    },
+    "./ky": {
+      "types": "./types/ky.d.ts",
+      "import": "./lib/ky-proxy.js"
+    },
+    "./wretch": {
+      "types": "./types/wretch.d.ts",
+      "import": "./lib/wretch-proxy.js"
+    },
+    "./make-fetch-happen": {
+      "types": "./types/make-fetch-happen.d.ts",
+      "import": "./lib/make-fetch-happen-proxy.js"
+    },
+    "./needle": {
+      "types": "./types/needle.d.ts",
+      "import": "./lib/needle-proxy.js"
+    },
+    "./typed-rest-client": {
+      "types": "./types/typed-rest-client.d.ts",
+      "import": "./lib/typed-rest-client-proxy.js"
     }
   },
   "files": [
@@ -39,9 +59,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent",
+    "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent ky wretch make-fetch-happen needle typed-rest-client",
+    "test:run": "node run_tests.js",
     "test:verbose": "node test/test_proxy_headers.js -v",
-    "test:ts": "tsx test/test_proxy_headers.ts core axios node-fetch got undici superagent",
+    "test:ts": "tsx test/test_proxy_headers.ts core axios node-fetch got undici superagent ky wretch make-fetch-happen needle typed-rest-client",
     "test:ts:verbose": "tsx test/test_proxy_headers.ts -v",
     "test:types": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint lib test",
@@ -61,7 +82,12 @@
     "superagent",
     "proxymesh",
     "web-scraping",
-    "http-client"
+    "http-client",
+    "ky",
+    "wretch",
+    "make-fetch-happen",
+    "needle",
+    "typed-rest-client"
   ],
   "author": {
     "name": "ProxyMesh",
@@ -88,7 +114,12 @@
     "got": "^12.0.0 || ^13.0.0 || ^14.0.0",
     "node-fetch": "^3.0.0",
     "superagent": "^8.0.0 || ^9.0.0 || ^10.0.0",
-    "undici": "^5.0.0 || ^6.0.0 || ^7.0.0"
+    "undici": "^5.0.0 || ^6.0.0 || ^7.0.0",
+    "ky": "^1.0.0",
+    "wretch": "^2.0.0",
+    "make-fetch-happen": "^14.0.0",
+    "needle": "^3.0.0",
+    "typed-rest-client": "^2.0.0"
   },
   "peerDependenciesMeta": {
     "axios": {
@@ -105,6 +136,21 @@
     },
     "undici": {
       "optional": true
+    },
+    "ky": {
+      "optional": true
+    },
+    "wretch": {
+      "optional": true
+    },
+    "make-fetch-happen": {
+      "optional": true
+    },
+    "needle": {
+      "optional": true
+    },
+    "typed-rest-client": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -115,6 +161,11 @@
     "superagent": "^10.1.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "undici": "^7.2.0"
+    "undici": "^7.2.0",
+    "ky": "^1.7.0",
+    "wretch": "^2.11.0",
+    "make-fetch-happen": "^14.0.3",
+    "needle": "^3.3.0",
+    "typed-rest-client": "^2.2.0"
   }
 }

@@ -14,13 +14,20 @@ This library solves both problems for popular JavaScript HTTP libraries.
 
 ## Supported Libraries
 
-| Library | Module | Use Case |
-|---------|--------|----------|
-| [axios](https://axios-http.com/) | `axios-proxy` | Most popular HTTP client |
-| [node-fetch](https://github.com/node-fetch/node-fetch) | `node-fetch-proxy` | Fetch API for Node.js |
-| [got](https://github.com/sindresorhus/got) | `got-proxy` | Human-friendly HTTP client |
-| [undici](https://undici.nodejs.org/) | `undici-proxy` | Fast HTTP client (Node.js core) |
-| [superagent](https://github.com/ladjs/superagent) | `superagent-proxy` | Flexible HTTP client |
+| Library | Subpath export | Notes |
+|---------|----------------|--------|
+| [axios](https://axios-http.com/) | `javascript-proxy-headers/axios` | Widely used client |
+| [node-fetch](https://github.com/node-fetch/node-fetch) | `javascript-proxy-headers/node-fetch` | Fetch API on Node |
+| [got](https://github.com/sindresorhus/got) | `javascript-proxy-headers/got` | Ergonomic API |
+| [undici](https://undici.nodejs.org/) | `javascript-proxy-headers/undici` | Node’s fast HTTP stack |
+| [superagent](https://github.com/ladjs/superagent) | `javascript-proxy-headers/superagent` | Chaining API |
+| [ky](https://github.com/sindresorhus/ky) | `javascript-proxy-headers/ky` | Tiny fetch wrapper |
+| [wretch](https://github.com/elbywan/wretch) | `javascript-proxy-headers/wretch` | Fetch wrapper (sets wretch’s global fetch polyfill) |
+| [make-fetch-happen](https://github.com/npm/make-fetch-happen) | `javascript-proxy-headers/make-fetch-happen` | npm-style fetch (cache, retries, proxy) |
+| [needle](https://github.com/tomas/needle) | `javascript-proxy-headers/needle` | Lean HTTP client |
+| [typed-rest-client](https://github.com/microsoft/typed-rest-client) | `javascript-proxy-headers/typed-rest-client` | Azure / DevOps–style REST client |
+
+**urllib** is not integrated yet: it expects an [undici](https://undici.nodejs.org/) `Dispatcher`, not a Node `Agent`. See `notes/urllib-integration-deferred.md` in this repo for a possible approach.
 
 ## Installation
 
@@ -28,9 +35,9 @@ This library solves both problems for popular JavaScript HTTP libraries.
 npm install javascript-proxy-headers
 ```
 
-Then install the HTTP library you want to use (e.g., `npm install axios`).
+Then install the HTTP client(s) you use (for example `axios`, `got`, `ky`, `wretch`, `make-fetch-happen`, `needle`, or `typed-rest-client`). Each is an optional peer dependency.
 
-> **Note:** This package has no dependencies by default - install only what you need.
+> **Note:** This package has no runtime dependencies by default—install only the adapters you need.
 
 ## Quick Start
 
@@ -94,6 +101,85 @@ const { statusCode, headers, body, proxyHeaders } = await request(
 console.log(proxyHeaders.get('x-proxymesh-ip'));
 ```
 
+### ky
+
+Uses a custom `fetch` built from node-fetch + `ProxyHeadersAgent` (`ky.create({ fetch })`).
+
+```javascript
+import { createProxyKy } from 'javascript-proxy-headers/ky';
+
+const api = await createProxyKy({
+    proxy: 'http://user:pass@proxy.example.com:8080',
+    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
+});
+
+const response = await api('https://httpbin.org/ip');
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
+```
+
+### wretch
+
+Registers the same custom `fetch` as wretch’s fetch polyfill. Use the normal wretch chain (for example `.get().res()`).
+
+```javascript
+import { createProxyWretch } from 'javascript-proxy-headers/wretch';
+
+const wretch = await createProxyWretch({
+    proxy: 'http://user:pass@proxy.example.com:8080',
+    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
+});
+
+const response = await wretch('https://httpbin.org/ip').get().res();
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
+```
+
+### make-fetch-happen
+
+Passes a `ProxyHeadersAgent` as `agent`; `@npmcli/agent` uses it as-is when set.
+
+```javascript
+import { createProxyMakeFetchHappen } from 'javascript-proxy-headers/make-fetch-happen';
+
+const fetch = createProxyMakeFetchHappen({
+    proxy: 'http://user:pass@proxy.example.com:8080',
+    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
+});
+
+const response = await fetch('https://httpbin.org/ip');
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
+```
+
+### needle
+
+```javascript
+import { proxyNeedleGet } from 'javascript-proxy-headers/needle';
+
+const res = await proxyNeedleGet('https://httpbin.org/ip', {
+    proxy: 'http://user:pass@proxy.example.com:8080',
+    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
+});
+
+// CONNECT response headers merged onto res.headers where missing
+console.log(res.headers['x-proxymesh-ip']);
+```
+
+### typed-rest-client
+
+Uses a subclass of `HttpClient` that routes HTTPS through `ProxyHeadersAgent` (no `tunnel` agent).
+
+```javascript
+import { createProxyRestClient } from 'javascript-proxy-headers/typed-rest-client';
+
+const client = createProxyRestClient({
+    userAgent: 'my-app',
+    proxy: 'http://user:pass@proxy.example.com:8080',
+    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
+});
+
+await client.get('https://httpbin.org/ip');
+console.log(client.proxyAgent.lastProxyHeaders?.get('x-proxymesh-ip'));
+```
+
 ### Core Agent (Advanced)
 
 For direct control, use the core `ProxyHeadersAgent`:
@@ -116,18 +202,21 @@ https.get('https://httpbin.org/ip', { agent }, (res) => {
 
 ## Testing
 
-A test harness is included to verify proxy header functionality:
+Integration tests need a real proxy (set `PROXY_URL` or `HTTPS_PROXY`):
 
 ```bash
-# Set your proxy
 export PROXY_URL='http://user:pass@proxy.example.com:8080'
 
-# Test all modules
-npm test
+npm test                              # all adapters (see package.json "test")
+node run_tests.js -v                  # same harness from repo root
+npm run test:ts                       # same checks via tsx + TypeScript harness
+npm run test:types                    # `tsc --noEmit` only (no network)
 
-# Test specific module
-npm test axios
+# Limit modules
+node test/test_proxy_headers.js -v axios ky
 ```
+
+Verbose (`-v`) prints captured header values. See `test/test_proxy_headers.js --help`.
 
 ## Requirements
 
