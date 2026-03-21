@@ -15,12 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Omit registry-url: setup-node otherwise sets NODE_AUTH_TOKEN to a placeholder and npm publish uses that instead of OIDC.
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
+          node-version: 22
+          check-latest: true
           cache: npm
+
+      - name: Upgrade npm for trusted publishing (OIDC)
+        run: npm install -g npm@">=11.5.1"
 
       - name: Ensure versions match
         shell: bash
