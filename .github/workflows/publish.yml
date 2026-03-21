@@ -15,12 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Omit registry-url: setup-node otherwise sets NODE_AUTH_TOKEN to a placeholder and npm publish uses that instead of OIDC.
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
+          node-version: 22
+          check-latest: true
           cache: npm
+
+      - name: Upgrade npm for trusted publishing (OIDC)
+        run: npm install -g npm@">=11.5.1"
 
       - name: Ensure versions match
         shell: bash
@@ -29,12 +33,15 @@ jobs:
           PKG_VERSION="$(node -p "require('./package.json').version")"
           JSR_VERSION="$(node -p "require('./jsr.json').version")"
           TAG_NAME="${{ github.event.release.tag_name }}"
+          if [[ -z "$TAG_NAME" ]]; then
+            TAG_NAME="v-${PKG_VERSION}"
+          fi
           if [[ "$PKG_VERSION" != "$JSR_VERSION" ]]; then
             echo "Version mismatch: package.json=$PKG_VERSION, jsr.json=$JSR_VERSION"
             exit 1
           fi
-          if [[ "$TAG_NAME" != "v$PKG_VERSION" && "$TAG_NAME" != "$PKG_VERSION" ]]; then
-            echo "Release tag '$TAG_NAME' does not match version '$PKG_VERSION' (expected '$PKG_VERSION' or 'v$PKG_VERSION')."
+          if [[ "$TAG_NAME" != "v$PKG_VERSION" && "$TAG_NAME" != "$PKG_VERSION" && "$TAG_NAME" != "v-${PKG_VERSION}" ]]; then
+            echo "Release tag '$TAG_NAME' does not match version '$PKG_VERSION' (expected '$PKG_VERSION', 'v$PKG_VERSION', or 'v-${PKG_VERSION}')."
             exit 1
           fi
 
@@ -45,7 +52,5 @@ jobs:
         run: npm publish --access public --provenance
 
       - name: Publish to JSR
-        run: |
-          # Trusted publishing should authenticate via OIDC; token is intentionally not required here.
-          npx jsr publish --provenance
+        run: npx jsr publish
 
