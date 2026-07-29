@@ -38,7 +38,12 @@ jobs:
             exit 1
           fi
 
-      - name: Run integration tests
+      - name: Run JavaScript integration tests
         env:
           PROXY_URL: ${{ secrets.PROXY_URL }}
         run: npm test
+
+      - name: Run TypeScript integration tests
+        env:
+          PROXY_URL: ${{ secrets.PROXY_URL }}
+        run: npm run test:ts
