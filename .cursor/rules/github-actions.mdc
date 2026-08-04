@@ -1,0 +1,72 @@
+---
+description: Pin GitHub Actions to Node 24-compatible commit SHAs (not version tags)
+globs: .github/workflows/**/*.{yml,yaml}
+alwaysApply: false
+---
+
+# GitHub Actions — Node 24 and SHA pinning
+
+When you **create or change** any file under `.github/workflows/` (or composite/reusable actions under `.github/actions/`):
+
+## 1. Use Node 24–compatible action majors
+
+GitHub deprecated Node 20 for JavaScript actions. Do **not** use older majors that still target Node 20:
+
+| Action | Do not use | Use instead |
+|--------|------------|-------------|
+| `actions/checkout` | v4 and below | **v6** |
+| `actions/setup-node` | v4 and below | **v6** |
+| `actions/setup-python` | v5 and below | **v6** |
+| `actions/upload-artifact` | v4 and below | **v7** |
+| `actions/download-artifact` | v4 and below | **v8** |
+| `actions/cache` | v4 and below | **v5** |
+
+Apply the same rule to other official `actions/*` helpers: pick the current major whose `action.yml` declares `using: node24`.
+
+## 2. Pin every `uses:` to a commit SHA
+
+- **Never** leave floating refs: `@v6`, `@v4`, `@main`, branch names, or tags alone.
+- **Always** use the 40-character commit SHA, with the human-readable version in a trailing comment.
+
+```yaml
+# Bad
+uses: actions/checkout@v6
+
+# Good
+uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+```
+
+Preferred SHAs for common official actions (update when bumping):
+
+```yaml
+uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+```
+
+Resolve newer SHAs from the latest patch tag on the major line:
+
+```bash
+gh api "repos/actions/checkout/git/ref/tags/v6.0.3" -q '.object.sha'
+# If type is "tag", dereference: gh api "repos/actions/checkout/git/tags/SHA" -q '.object.sha'
+```
+
+Apply the same SHA-pinning rule to third-party actions (`uses: org/action@sha # vX.Y.Z`).
+
+## 3. Run actionlint before finishing
+
+```bash
+actionlint .github/workflows/*.yml
+```
+
+Fix all errors and warnings; re-run until exit code 0.
+
+## 4. Completion checklist
+
+- [ ] Official actions use Node 24–compatible majors (v6/v7/v8/v5 as above)
+- [ ] Every `uses:` references a full commit SHA (not a tag/branch)
+- [ ] Version comments match the resolved release (e.g. `# v6.0.3`)
+- [ ] `actionlint` passes on changed workflows
