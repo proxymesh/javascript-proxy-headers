@@ -22,7 +22,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.event_name == 'workflow_run' && 'main' || github.event_name == 'release' && github.ref || 'main' }}
 
@@ -50,7 +50,7 @@ jobs:
       # the toolcache `npm` binary on GitHub-hosted runners, so `npm publish` stayed on 10.x and OIDC trusted publishing never ran.
       - name: Setup Node
         if: steps.gate.outputs.publish == 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
           cache: npm
