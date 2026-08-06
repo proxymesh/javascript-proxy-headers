@@ -8,5 +8,5 @@
  */
 
 export { ProxyHeadersAgent, ConnectError } from './lib/core/proxy-headers-agent.js';
-export { parseProxyUrl, parseTargetUrl, buildConnectRequest } from './lib/core/utils.js';
+export { parseProxyUrl, parseTargetUrl, buildConnectRequest, validateHeaderName, validateHeaderValue } from './lib/core/utils.js';
 export { parseConnectResponse, hasCompleteHeaders } from './lib/core/connect-parser.js';
