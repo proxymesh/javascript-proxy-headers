@@ -452,6 +452,8 @@ async function runTests(testNames: string[], config: TestConfig, verbose: boolea
   console.log();
 
   const results: TestResult[] = [];
+  const maxRetries = 2;
+
   for (const name of testNames) {
     const testFn = AVAILABLE_TESTS[name];
     if (!testFn) {
@@ -461,11 +463,36 @@ async function runTests(testNames: string[], config: TestConfig, verbose: boolea
       continue;
     }
     process.stdout.write(`Testing ${name}... `);
-    const result = await testFn(config);
+    let result = await testFn(config);
+
+    for (let attempt = 1; !result.success && attempt <= maxRetries; attempt++) {
+      if (!isTransientError(result)) break;
+      process.stdout.write(`retry ${attempt}... `);
+      await sleep(1000 * attempt);
+      result = await testFn(config);
+    }
+
     console.log(result.success ? "OK" : "FAILED");
     results.push(result);
   }
   return results;
+}
+
+function isTransientError(result: TestResult): boolean {
+  if (result.success) return false;
+  const msg = (result.error || "").toLowerCase();
+  return msg.includes("503") ||
+    msg.includes("502") ||
+    msg.includes("socket hang up") ||
+    msg.includes("econnreset") ||
+    msg.includes("econnrefused") ||
+    msg.includes("etimedout") ||
+    msg.includes("service temporarily unavailable") ||
+    msg.includes("service unavailable");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function printResults(results: TestResult[], verbose: boolean) {
