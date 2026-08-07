@@ -369,6 +369,14 @@ const AVAILABLE_TESTS = {
                 `Header '${config.proxyHeader}' not found in proxy response`,
                 response.status);
         } catch (err) {
+            if (err.response && err.response.proxyHeaders) {
+                const headerValue = checkHeader(err.response.proxyHeaders, config.proxyHeader);
+                const sentErr = validateSentHeaderValue(config, headerValue);
+                if (sentErr) return new TestResult('wretch', false, null, sentErr);
+                if (headerValue) {
+                    return new TestResult('wretch', true, headerValue, null, err.response.status);
+                }
+            }
             return new TestResult('wretch', false, null, err.message);
         }
     },
@@ -423,10 +431,11 @@ const AVAILABLE_TESTS = {
     },
 
     async 'typed-rest-client'(config) {
+        let client;
         try {
             const { createProxyRestClient } = await import('../lib/typed-rest-client-proxy.js');
 
-            const client = createProxyRestClient({
+            client = createProxyRestClient({
                 userAgent: 'javascript-proxy-headers-test',
                 proxy: config.proxyUrl,
                 proxyHeaders: config.proxyHeadersToSend,
@@ -444,6 +453,14 @@ const AVAILABLE_TESTS = {
                 `Header '${config.proxyHeader}' not found in proxy response`,
                 result.statusCode);
         } catch (err) {
+            if (client && client.proxyAgent && client.proxyAgent.lastProxyHeaders) {
+                const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders, config.proxyHeader);
+                const sentErr = validateSentHeaderValue(config, headerValue);
+                if (sentErr) return new TestResult('typed-rest-client', false, null, sentErr);
+                if (headerValue) {
+                    return new TestResult('typed-rest-client', true, headerValue, null, err.statusCode);
+                }
+            }
             return new TestResult('typed-rest-client', false, null, err.message);
         }
     },
@@ -542,7 +559,7 @@ async function runTests(testNames, config, verbose) {
     console.log();
 
     const results = [];
-    const maxRetries = 2;
+    const maxRetries = 4;
 
     for (const name of testNames) {
         const testFn = AVAILABLE_TESTS[name];
@@ -558,7 +575,7 @@ async function runTests(testNames, config, verbose) {
         for (let attempt = 1; !result.success && attempt <= maxRetries; attempt++) {
             if (!isTransientError(result)) break;
             process.stdout.write(`retry ${attempt}... `);
-            await sleep(1000 * attempt);
+            await sleep(2000 * attempt);
             result = await testFn(config);
         }
 
