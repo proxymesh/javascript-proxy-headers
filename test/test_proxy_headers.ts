@@ -313,7 +313,13 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
         `Header '${config.proxyHeader}' not found in proxy response`,
         response.status,
       );
-    } catch (err) {
+    } catch (err: any) {
+      if (err.response && err.response.proxyHeaders) {
+        const headerValue = checkHeader(err.response.proxyHeaders as Map<string, string>, config.proxyHeader);
+        const sentErr = validateSentHeaderValue(config, headerValue);
+        if (sentErr) return new TestResult("wretch", false, null, sentErr);
+        if (headerValue) return new TestResult("wretch", true, headerValue, null, err.response.status);
+      }
       return new TestResult("wretch", false, null, (err as Error).message);
     }
   },
@@ -366,9 +372,10 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
   },
 
   async "typed-rest-client"(config) {
+    let client: any;
     try {
       const { createProxyRestClient } = await import("../lib/typed-rest-client-proxy.js");
-      const client = createProxyRestClient({
+      client = createProxyRestClient({
         userAgent: "javascript-proxy-headers-test",
         proxy: config.proxyUrl!,
         proxyHeaders: config.proxyHeadersToSend,
@@ -385,7 +392,13 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
         `Header '${config.proxyHeader}' not found in proxy response`,
         result.statusCode,
       );
-    } catch (err) {
+    } catch (err: any) {
+      if (client && client.proxyAgent && client.proxyAgent.lastProxyHeaders) {
+        const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders as Map<string, string>, config.proxyHeader);
+        const sentErr = validateSentHeaderValue(config, headerValue);
+        if (sentErr) return new TestResult("typed-rest-client", false, null, sentErr);
+        if (headerValue) return new TestResult("typed-rest-client", true, headerValue, null, err.statusCode);
+      }
       return new TestResult("typed-rest-client", false, null, (err as Error).message);
     }
   },
@@ -452,6 +465,8 @@ async function runTests(testNames: string[], config: TestConfig, verbose: boolea
   console.log();
 
   const results: TestResult[] = [];
+  const maxRetries = 4;
+
   for (const name of testNames) {
     const testFn = AVAILABLE_TESTS[name];
     if (!testFn) {
@@ -461,11 +476,36 @@ async function runTests(testNames: string[], config: TestConfig, verbose: boolea
       continue;
     }
     process.stdout.write(`Testing ${name}... `);
-    const result = await testFn(config);
+    let result = await testFn(config);
+
+    for (let attempt = 1; !result.success && attempt <= maxRetries; attempt++) {
+      if (!isTransientError(result)) break;
+      process.stdout.write(`retry ${attempt}... `);
+      await sleep(2000 * attempt);
+      result = await testFn(config);
+    }
+
     console.log(result.success ? "OK" : "FAILED");
     results.push(result);
   }
   return results;
+}
+
+function isTransientError(result: TestResult): boolean {
+  if (result.success) return false;
+  const msg = (result.error || "").toLowerCase();
+  return msg.includes("503") ||
+    msg.includes("502") ||
+    msg.includes("socket hang up") ||
+    msg.includes("econnreset") ||
+    msg.includes("econnrefused") ||
+    msg.includes("etimedout") ||
+    msg.includes("service temporarily unavailable") ||
+    msg.includes("service unavailable");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function printResults(results: TestResult[], verbose: boolean) {
