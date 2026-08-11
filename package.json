@@ -159,7 +159,7 @@
     "eslint": "^10.0.3",
     "got": "^15.0.0",
     "ky": "^2.0.0",
-    "make-fetch-happen": "^15.0.5",
+    "make-fetch-happen": "^16.0.1",
     "needle": "^3.3.0",
     "node-fetch": "^3.3.0",
     "superagent": "^10.1.0",
