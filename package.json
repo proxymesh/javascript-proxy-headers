@@ -164,7 +164,7 @@
     "node-fetch": "^3.3.0",
     "superagent": "^10.1.0",
     "tsx": "^4.21.0",
-    "typed-rest-client": "^2.2.0",
+    "typed-rest-client": "^3.0.0",
     "typescript": "^7.0.2",
     "undici": "^8.0.2",
     "wretch": "^3.0.7"
