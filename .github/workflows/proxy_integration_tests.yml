@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: read
+  # Required for setup-node npm cache save under restricted GITHUB_TOKEN scopes.
+  actions: write
 
 jobs:
   integration:
