@@ -8,6 +8,7 @@ export interface CreateProxyRestClientOptions {
   proxy: string;
   proxyHeaders?: Record<string, string>;
   onProxyConnect?: (headers: Map<string, string>) => void;
+  proxyTlsOptions?: object;
 }
 
 export function createProxyRestClient(

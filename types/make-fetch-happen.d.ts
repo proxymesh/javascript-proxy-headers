@@ -5,6 +5,7 @@ export interface CreateProxyMakeFetchHappenOptions {
   proxy: string;
   proxyHeaders?: Record<string, string>;
   onProxyConnect?: (headers: Map<string, string>) => void;
+  proxyTlsOptions?: object;
   [key: string]: unknown;
 }
 
