@@ -3,6 +3,8 @@ export interface UndiciRequestOptions {
   proxy: string;
   /** Headers to send to the proxy */
   proxyHeaders?: Record<string, string>;
+  /** TLS options for an https:// proxy */
+  proxyTlsOptions?: object;
   /** HTTP method */
   method?: string;
   /** Request headers */

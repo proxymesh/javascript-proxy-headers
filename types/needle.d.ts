@@ -2,6 +2,7 @@ export interface ProxyNeedleOptions {
   proxy: string;
   proxyHeaders?: Record<string, string>;
   onProxyConnect?: (headers: Map<string, string>) => void;
+  proxyTlsOptions?: object;
   needleOptions?: Record<string, unknown>;
 }
 
@@ -11,6 +12,7 @@ export interface CreateProxyNeedleOptions {
   proxy: string;
   proxyHeaders?: Record<string, string>;
   onProxyConnect?: (headers: Map<string, string>) => void;
+  proxyTlsOptions?: object;
   needleOptions?: Record<string, unknown>;
 }
 

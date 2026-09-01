@@ -5,6 +5,8 @@ export interface ProxyFetchOptions extends RequestInit {
   proxyHeaders?: Record<string, string>;
   /** Callback when CONNECT completes */
   onProxyConnect?: (headers: Map<string, string>) => void;
+  /** TLS options for an https:// proxy */
+  proxyTlsOptions?: object;
 }
 
 export interface ProxyResponse {
@@ -40,6 +42,8 @@ export interface CreateProxyFetchOptions {
   proxyHeaders?: Record<string, string>;
   /** Callback when CONNECT completes */
   onProxyConnect?: (headers: Map<string, string>) => void;
+  /** TLS options for an https:// proxy */
+  proxyTlsOptions?: object;
 }
 
 export function createProxyFetch(

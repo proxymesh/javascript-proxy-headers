@@ -230,6 +230,15 @@ const client = await createProxyAxios({
 });
 ```
 
+Use an `https://` proxy URL to speak TLS to the proxy (so `Proxy-Authorization` is not sent in the clear). Pass `proxyTlsOptions` if the proxy uses a private CA.
+
+```javascript
+const client = await createProxyAxios({
+    proxy: 'https://username:password@proxy.example.com:443',
+    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
+});
+```
+
 ## Using the Core Agent
 
 For advanced use cases, you can use the core `ProxyHeadersAgent` directly with any library that accepts an `https.Agent`:
