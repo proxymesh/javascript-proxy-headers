@@ -17,6 +17,8 @@ export interface ProxyHeadersAgentOptions {
     proxyTimeout?: number;
     /** TLS options for target connection */
     tlsOptions?: object;
+    /** TLS options for the connection to an https:// proxy */
+    proxyTlsOptions?: object;
 }
 
 export class ProxyHeadersAgent extends Agent {
@@ -28,6 +30,10 @@ export class ProxyHeadersAgent extends Agent {
     readonly proxyPort: number;
     /** Base64-encoded proxy auth */
     readonly proxyAuth: string | null;
+    /** Proxy URL protocol (`http:` or `https:`) */
+    readonly proxyProtocol: string;
+    /** TLS options for the connection to an https:// proxy */
+    readonly proxyTlsOptions: object;
     /** Headers to send to proxy */
     readonly proxyHeaders: Record<string, string>;
     /** Headers from last CONNECT response */

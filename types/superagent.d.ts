@@ -8,6 +8,8 @@ export interface ProxyPluginOptions {
   proxyHeaders?: Record<string, string>;
   /** Callback when CONNECT completes */
   onProxyConnect?: (headers: Map<string, string>) => void;
+  /** TLS options for an https:// proxy */
+  proxyTlsOptions?: object;
 }
 
 export interface ProxyResponse extends Response {

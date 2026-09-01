@@ -8,6 +8,8 @@ export interface CreateProxyGotOptions {
   proxyHeaders?: Record<string, string>;
   /** Callback when CONNECT completes */
   onProxyConnect?: (headers: Map<string, string>) => void;
+  /** TLS options for an https:// proxy */
+  proxyTlsOptions?: object;
   /** Additional got instance options */
   gotOptions?: object;
 }

@@ -11,8 +11,9 @@ import { request, type UndiciRequestOptions, type UndiciResponse } from "javascr
 import { proxyPlugin, createProxySuperagent, type ProxyPluginOptions, type ProxySuperagentClient } from "javascript-proxy-headers/superagent";
 
 async function typecheck() {
-  const agent = new ProxyHeadersAgent("http://proxy.example.com:8080", {
+    const agent = new ProxyHeadersAgent("http://proxy.example.com:8080", {
     proxyHeaders: { "X-ProxyMesh-Test": "1" },
+    proxyTlsOptions: { rejectUnauthorized: true },
     onProxyConnect: (headers) => {
       // Touch the Map type so TS checks the callback signature.
       void headers.get("x-proxymesh-test");

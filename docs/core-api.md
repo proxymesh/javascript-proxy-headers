@@ -22,11 +22,12 @@ new ProxyHeadersAgent(proxy, options)
 
 | Name | Type | Description |
 |------|------|-------------|
-| `proxy` | `string \| URL` | Proxy URL (e.g., `http://user:pass@proxy:8080`) |
+| `proxy` | `string \| URL` | Proxy URL (e.g., `http://user:pass@proxy:8080` or `https://user:pass@proxy:443`) |
 | `options.proxyHeaders` | `Object` | Headers to send to the proxy |
 | `options.onProxyConnect` | `Function` | Callback when CONNECT completes: `(headers: Map) => void` |
 | `options.proxyTimeout` | `number` | Timeout for proxy CONNECT in ms (default: 30000) |
 | `options.tlsOptions` | `Object` | TLS options for target connection |
+| `options.proxyTlsOptions` | `Object` | TLS options for the connection to an `https://` proxy |
 
 ### Example
 
@@ -69,6 +70,7 @@ req.end();
 | `proxyHost` | `string` | Proxy hostname |
 | `proxyPort` | `number` | Proxy port |
 | `proxyAuth` | `string \| null` | Base64-encoded proxy auth |
+| `proxyProtocol` | `string` | Proxy URL protocol (`http:` or `https:`) |
 | `proxyHeaders` | `Object` | Headers to send to proxy |
 | `lastProxyHeaders` | `Map \| null` | Headers from last CONNECT response |
 
@@ -149,7 +151,7 @@ const { host, port } = parseTargetUrl('https://example.com:8443/path');
 
 ### buildConnectRequest(targetHost, targetPort, proxyAuth, proxyHeaders)
 
-Build an HTTP CONNECT request string.
+Build an HTTP CONNECT request string. `targetHost` must not contain CR, LF, or NUL characters; `targetPort` must be an integer from 1 to 65535. Header names and values are validated the same way.
 
 ```javascript
 import { buildConnectRequest } from 'javascript-proxy-headers';
