@@ -2,7 +2,7 @@
  * JavaScript Proxy Headers - TypeScript Definitions
  */
 
-import { Agent } from 'https';
+import { Agent } from 'node:https';
 
 // =============================================================================
 // Core Types
