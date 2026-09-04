@@ -158,7 +158,7 @@
   "devDependencies": {
     "axios": "^1.7.0",
     "eslint": "^10.0.3",
-    "got": "^15.0.0",
+    "got": "^16.0.0",
     "ky": "^2.0.0",
     "make-fetch-happen": "^16.0.1",
     "needle": "^3.3.0",
