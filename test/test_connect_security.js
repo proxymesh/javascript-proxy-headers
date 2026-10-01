@@ -21,6 +21,8 @@ import {
 } from '../lib/core/utils.js';
 import { ProxyHeadersAgent } from '../lib/core/proxy-headers-agent.js';
 import { createProxyAxios } from '../lib/axios-proxy.js';
+import { createProxyMakeFetchHappen } from '../lib/make-fetch-happen-proxy.js';
+import { createProxyRestClient } from '../lib/typed-rest-client-proxy.js';
 import { getProxyHeaders } from '../lib/core/proxy-headers-store.js';
 
 test('buildConnectRequest rejects CRLF in target host', () => {
@@ -236,7 +238,15 @@ function makeSelfSignedCert() {
     };
 }
 
-function createMitmConnectProxy({ cert, key, headerFactory, delayMs = 0 }) {
+function createMitmConnectProxy({
+    cert,
+    key,
+    headerFactory,
+    delayMs = 0,
+    keepAlive = false,
+    originStatus = 200,
+    originStatusText = originStatus === 200 ? 'OK' : 'Error',
+}) {
     let connectCount = 0;
     const server = net.createServer((sock) => {
         let buf = Buffer.alloc(0);
@@ -258,18 +268,27 @@ function createMitmConnectProxy({ cert, key, headerFactory, delayMs = 0 }) {
                 if (delayMs) await delay(delayMs);
                 let httpBuf = Buffer.alloc(0);
                 const tryRespond = () => {
-                    if (!httpBuf.includes('\r\n\r\n')) return;
-                    const reqLine = httpBuf.toString('utf8').split('\r\n')[0];
-                    const body = JSON.stringify({ ok: true, id, reqLine });
+                    const sep = httpBuf.indexOf('\r\n\r\n');
+                    if (sep === -1) return;
+                    const reqLine = httpBuf.subarray(0, sep).toString('utf8').split('\r\n')[0];
+                    httpBuf = httpBuf.subarray(sep + 4);
+                    const body = JSON.stringify({ ok: originStatus === 200, id, reqLine });
+                    const connHdr = keepAlive ? 'Connection: keep-alive\r\n' : 'Connection: close\r\n';
                     tlsSock.write(
-                        'HTTP/1.1 200 OK\r\n' +
+                        `HTTP/1.1 ${originStatus} ${originStatusText}\r\n` +
                         'Content-Type: application/json\r\n' +
                         `Content-Length: ${Buffer.byteLength(body)}\r\n` +
-                        'Connection: close\r\n' +
+                        connHdr +
                         '\r\n' +
                         body,
                     );
-                    tlsSock.end();
+                    if (!keepAlive) {
+                        tlsSock.end();
+                        return;
+                    }
+                    if (httpBuf.includes('\r\n\r\n')) {
+                        tryRespond();
+                    }
                 };
                 tlsSock.on('data', (chunk) => {
                     httpBuf = Buffer.concat([httpBuf, chunk]);
@@ -340,6 +359,112 @@ test('concurrent axios requests keep per-response CONNECT headers', async () => 
             assert.equal(row.raceId, String(row.body.id));
         }
     } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('axios attaches proxyHeaders on non-2xx error.response', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        originStatus: 500,
+        headerFactory: () =>
+            'X-ProxyMesh-IP: 203.0.113.50\r\nSet-Cookie: session=attacker-injected\r\n',
+    });
+    await listen(proxy);
+    try {
+        const { port } = proxy.address();
+        const client = await createProxyAxios({
+            proxy: `http://127.0.0.1:${port}`,
+        });
+        client.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+        await assert.rejects(
+            () => client.get('https://127.0.0.1/'),
+            (err) => {
+                assert.equal(err.response.status, 500);
+                assert.equal(err.response.proxyHeaders.get('x-proxymesh-ip'), '203.0.113.50');
+                assert.equal(err.response.headers['set-cookie'], undefined);
+                return true;
+            },
+        );
+    } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('typed-rest-client RestClient.get sets result.proxyHeaders', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        headerFactory: () => 'X-ProxyMesh-IP: 198.51.100.71\r\nX-Race-Id: rest\r\n',
+    });
+    await listen(proxy);
+    try {
+        const { port } = proxy.address();
+        const client = createProxyRestClient({
+            userAgent: 'javascript-proxy-headers-test',
+            proxy: `http://127.0.0.1:${port}`,
+        });
+        client.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+        const result = await client.get('https://127.0.0.1/');
+        assert.equal(result.statusCode, 200);
+        assert.ok(result.proxyHeaders instanceof Map);
+        assert.equal(result.proxyHeaders.get('x-proxymesh-ip'), '198.51.100.71');
+        assert.equal(result.proxyHeaders.get('x-race-id'), 'rest');
+        assert.equal(result.headers['set-cookie'], undefined);
+        assert.equal(result.result.ok, true);
+    } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('make-fetch-happen keep-alive reuse does not pick lastProxyHeaders', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        delayMs: 80,
+        keepAlive: true,
+        headerFactory: ({ id }) => `X-ProxyMesh-IP: 198.51.100.${id}\r\nX-Race-Id: ${id}\r\n`,
+    });
+    await listen(proxy);
+    let fetch;
+    try {
+        const { port } = proxy.address();
+        fetch = createProxyMakeFetchHappen({
+            proxy: `http://127.0.0.1:${port}`,
+        });
+        fetch.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+        fetch.proxyAgent.keepAlive = true;
+        fetch.proxyAgent.maxSockets = 10;
+        fetch.proxyAgent.maxFreeSockets = 10;
+
+        const [first, second] = await Promise.all([
+            fetch('https://127.0.0.1/a'),
+            fetch('https://127.0.0.1/b'),
+        ]);
+        const firstBody = await first.json();
+        const secondBody = await second.json();
+        assert.equal(first.proxyHeaders.get('x-race-id'), String(firstBody.id));
+        assert.equal(second.proxyHeaders.get('x-race-id'), String(secondBody.id));
+
+        const other = await fetch('https://127.0.0.2/other');
+        const otherBody = await other.json();
+        assert.equal(other.proxyHeaders.get('x-race-id'), String(otherBody.id));
+        assert.equal(fetch.proxyAgent.lastProxyHeaders.get('x-race-id'), String(otherBody.id));
+
+        const reused = await fetch('https://127.0.0.1/reuse');
+        const reusedBody = await reused.json();
+        assert.ok(reusedBody.id === firstBody.id || reusedBody.id === secondBody.id);
+        assert.equal(reused.proxyHeaders.get('x-race-id'), String(reusedBody.id));
+        assert.notEqual(reused.proxyHeaders.get('x-race-id'), String(otherBody.id));
+    } finally {
+        fetch?.proxyAgent.destroy();
         proxy.close();
         cleanup();
     }

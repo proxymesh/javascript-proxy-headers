@@ -102,7 +102,7 @@ const proxyIp = response.proxyHeaders.get('x-proxymesh-ip');
 const proxyCountry = response.proxyHeaders.get('x-proxymesh-country');
 ```
 
-`client.proxyAgent.lastProxyHeaders` is a last-write-wins snapshot of the most recent CONNECT. Use `response.proxyHeaders` for concurrent requests.
+`client.proxyAgent.lastProxyHeaders` is a last-write-wins snapshot of the most recent CONNECT. Use `response.proxyHeaders` for concurrent requests. Non-2xx responses attach the same Map on `error.response.proxyHeaders`.
 
 ## All Request Methods
 

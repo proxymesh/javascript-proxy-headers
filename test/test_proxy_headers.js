@@ -443,7 +443,7 @@ const AVAILABLE_TESTS = {
 
             const result = await client.get(config.testUrl);
             const headerValue = checkHeader(
-                result.proxyHeaders || client.proxyAgent.lastProxyHeaders,
+                result.proxyHeaders,
                 config.proxyHeader,
             );
 
@@ -456,8 +456,8 @@ const AVAILABLE_TESTS = {
                 `Header '${config.proxyHeader}' not found in proxy response`,
                 result.statusCode);
         } catch (err) {
-            if (client && client.proxyAgent && client.proxyAgent.lastProxyHeaders) {
-                const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders, config.proxyHeader);
+            if (err && err.proxyHeaders) {
+                const headerValue = checkHeader(err.proxyHeaders, config.proxyHeader);
                 const sentErr = validateSentHeaderValue(config, headerValue);
                 if (sentErr) return new TestResult('typed-rest-client', false, null, sentErr);
                 if (headerValue) {

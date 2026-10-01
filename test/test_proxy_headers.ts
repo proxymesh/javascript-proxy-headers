@@ -382,7 +382,7 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
       });
       const result = await client.get(config.testUrl);
       const headerValue = checkHeader(
-        (result.proxyHeaders || client.proxyAgent.lastProxyHeaders) as Map<string, string>,
+        result.proxyHeaders as Map<string, string>,
         config.proxyHeader,
       );
       const sentErr = validateSentHeaderValue(config, headerValue);
@@ -396,8 +396,8 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
         result.statusCode,
       );
     } catch (err: any) {
-      if (client && client.proxyAgent && client.proxyAgent.lastProxyHeaders) {
-        const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders as Map<string, string>, config.proxyHeader);
+      if (err && err.proxyHeaders) {
+        const headerValue = checkHeader(err.proxyHeaders as Map<string, string>, config.proxyHeader);
         const sentErr = validateSentHeaderValue(config, headerValue);
         if (sentErr) return new TestResult("typed-rest-client", false, null, sentErr);
         if (headerValue) return new TestResult("typed-rest-client", true, headerValue, null, err.statusCode);

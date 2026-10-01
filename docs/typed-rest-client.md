@@ -58,8 +58,8 @@ const client = createProxyRestClient({
     onProxyConnect: (h) => console.log(h.get('x-proxymesh-ip')),
 });
 
-await client.get('/v1/resource');
-console.log(client.proxyAgent.lastProxyHeaders);
+const response = await client.get('/v1/resource');
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ## Accessing Proxy Headers
