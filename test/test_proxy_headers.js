@@ -209,7 +209,7 @@ const AVAILABLE_TESTS = {
             const response = await client.get(config.testUrl, {
                 validateStatus: () => true,
             });
-            const headerValue = checkHeader(response.headers, config.proxyHeader);
+            const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
 
             const sentErr = validateSentHeaderValue(config, headerValue);
             if (sentErr) return new TestResult('axios', false, null, sentErr);
@@ -259,7 +259,7 @@ const AVAILABLE_TESTS = {
             });
 
             const response = await client(config.testUrl);
-            const headerValue = checkHeader(response.headers, config.proxyHeader);
+            const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
 
             const sentErr = validateSentHeaderValue(config, headerValue);
             if (sentErr) return new TestResult('got', false, null, sentErr);
@@ -308,7 +308,7 @@ const AVAILABLE_TESTS = {
             });
 
             const response = await client.get(config.testUrl).ok(() => true);
-            const headerValue = checkHeader(response.headers, config.proxyHeader);
+            const headerValue = checkHeader(response.proxyHeaders, config.proxyHeader);
 
             const sentErr = validateSentHeaderValue(config, headerValue);
             if (sentErr) return new TestResult('superagent', false, null, sentErr);
@@ -415,7 +415,7 @@ const AVAILABLE_TESTS = {
                 proxyHeaders: config.proxyHeadersToSend,
             });
 
-            const headerValue = checkHeader(res.headers, config.proxyHeader);
+            const headerValue = checkHeader(res.proxyHeaders, config.proxyHeader);
 
             const sentErr = validateSentHeaderValue(config, headerValue);
             if (sentErr) return new TestResult('needle', false, null, sentErr);
@@ -442,7 +442,10 @@ const AVAILABLE_TESTS = {
             });
 
             const result = await client.get(config.testUrl);
-            const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders, config.proxyHeader);
+            const headerValue = checkHeader(
+                result.proxyHeaders || client.proxyAgent.lastProxyHeaders,
+                config.proxyHeader,
+            );
 
             const sentErr = validateSentHeaderValue(config, headerValue);
             if (sentErr) return new TestResult('typed-rest-client', false, null, sentErr);

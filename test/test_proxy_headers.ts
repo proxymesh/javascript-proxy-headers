@@ -164,7 +164,7 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
       });
 
       const response = await client.get(config.testUrl, { validateStatus: () => true });
-      const headerValue = checkHeader(response.headers as Record<string, unknown>, config.proxyHeader);
+      const headerValue = checkHeader((response as { proxyHeaders?: Map<string, string> }).proxyHeaders, config.proxyHeader);
 
       const sentErr = validateSentHeaderValue(config, headerValue);
       if (sentErr) return new TestResult("axios", false, null, sentErr);
@@ -209,7 +209,7 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
       });
 
       const response = await client(config.testUrl);
-      const headerValue = checkHeader(response.headers as Record<string, unknown>, config.proxyHeader);
+      const headerValue = checkHeader((response as { proxyHeaders?: Map<string, string> }).proxyHeaders, config.proxyHeader);
 
       const sentErr = validateSentHeaderValue(config, headerValue);
       if (sentErr) return new TestResult("got", false, null, sentErr);
@@ -253,7 +253,7 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
       });
 
       const response = await client.get(config.testUrl).ok(() => true);
-      const headerValue = checkHeader(response.headers as Record<string, unknown>, config.proxyHeader);
+      const headerValue = checkHeader((response as { proxyHeaders?: Map<string, string> }).proxyHeaders, config.proxyHeader);
 
       const sentErr = validateSentHeaderValue(config, headerValue);
       if (sentErr) return new TestResult("superagent", false, null, sentErr);
@@ -355,7 +355,7 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
         proxy: config.proxyUrl!,
         proxyHeaders: config.proxyHeadersToSend,
       });
-      const headerValue = checkHeader(res.headers as Record<string, unknown>, config.proxyHeader);
+      const headerValue = checkHeader((res as { proxyHeaders?: Map<string, string> }).proxyHeaders, config.proxyHeader);
       const sentErr = validateSentHeaderValue(config, headerValue);
       if (sentErr) return new TestResult("needle", false, null, sentErr);
       if (headerValue) return new TestResult("needle", true, headerValue, null, res.statusCode);
@@ -381,7 +381,10 @@ const AVAILABLE_TESTS: Record<string, TestFn> = {
         proxyHeaders: config.proxyHeadersToSend,
       });
       const result = await client.get(config.testUrl);
-      const headerValue = checkHeader(client.proxyAgent.lastProxyHeaders as Map<string, string>, config.proxyHeader);
+      const headerValue = checkHeader(
+        (result.proxyHeaders || client.proxyAgent.lastProxyHeaders) as Map<string, string>,
+        config.proxyHeader,
+      );
       const sentErr = validateSentHeaderValue(config, headerValue);
       if (sentErr) return new TestResult("typed-rest-client", false, null, sentErr);
       if (headerValue) return new TestResult("typed-rest-client", true, headerValue, null, result.statusCode);

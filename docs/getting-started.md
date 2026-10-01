@@ -28,6 +28,12 @@ npm install typed-rest-client
 
 Use [ky](ky.md) or [wretch](wretch.md) together with `node-fetch` (the adapters build on the same proxy-aware fetch as the node-fetch module).
 
+## 1.0 breaking changes
+
+CONNECT headers are no longer merged into origin `response.headers`. Use `response.proxyHeaders.get('x-proxymesh-ip')` instead. That keeps CONNECT metadata off the origin response (so `Set-Cookie` / `Location` from the proxy hop cannot impersonate the target) and keeps concurrent requests isolated.
+
+`agent.lastProxyHeaders` is last-write-wins. Prefer per-response `proxyHeaders` or `getProxyHeaders()`.
+
 ## Quick Examples
 
 ### axios
@@ -42,7 +48,7 @@ const client = await createProxyAxios({
 
 const response = await client.get('https://httpbin.org/ip');
 console.log(response.data);
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### node-fetch
@@ -72,7 +78,7 @@ const client = await createProxyGot({
 
 const response = await client('https://httpbin.org/ip');
 console.log(response.body);
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### undici
@@ -105,7 +111,7 @@ const client = await createProxySuperagent({
 
 const response = await client.get('https://httpbin.org/ip');
 console.log(response.body);
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### ky
@@ -165,7 +171,7 @@ const res = await proxyNeedleGet('https://httpbin.org/ip', {
 });
 
 console.log(res.body);
-console.log(res.headers['x-proxymesh-ip']);
+console.log(res.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### typed-rest-client
@@ -179,8 +185,8 @@ const client = createProxyRestClient({
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' },
 });
 
-await client.get('https://httpbin.org/ip');
-console.log(client.proxyAgent.lastProxyHeaders?.get('x-proxymesh-ip'));
+const response = await client.get('https://httpbin.org/ip');
+console.log(response.proxyHeaders?.get('x-proxymesh-ip'));
 ```
 
 ## Understanding Proxy Headers
@@ -209,15 +215,16 @@ Proxy response headers from the CONNECT request are captured and made available.
 
 | Library | Access Method |
 |---------|---------------|
-| axios | `response.headers['header-name']` (merged) |
+| axios | `response.proxyHeaders.get('header-name')` |
 | node-fetch | `response.proxyHeaders.get('header-name')` |
-| got | `response.headers['header-name']` (merged) |
+| got | `response.proxyHeaders.get('header-name')` |
 | undici | `proxyHeaders.get('header-name')` |
-| superagent | `response.headers['header-name']` (merged) |
+| superagent | `response.proxyHeaders.get('header-name')` |
 | ky / wretch | `response.proxyHeaders.get('header-name')` on the fetch `Response` |
 | make-fetch-happen | `response.proxyHeaders.get('header-name')` |
-| needle | `res.headers['header-name']` (merged where not already set) |
-| typed-rest-client | `client.proxyAgent.lastProxyHeaders.get('header-name')` |
+| needle | `res.proxyHeaders.get('header-name')` |
+| typed-rest-client | `response.proxyHeaders.get('header-name')` (or `getProxyHeaders(httpResponse.message)`) |
+| core `https.Agent` | `getProxyHeaders(incomingMessage)` or `onProxyConnect` |
 
 ## Proxy Authentication
 

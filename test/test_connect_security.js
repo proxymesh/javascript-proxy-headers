@@ -20,6 +20,8 @@ import {
     proxyReadyEvent,
 } from '../lib/core/utils.js';
 import { ProxyHeadersAgent } from '../lib/core/proxy-headers-agent.js';
+import { createProxyAxios } from '../lib/axios-proxy.js';
+import { getProxyHeaders } from '../lib/core/proxy-headers-store.js';
 
 test('buildConnectRequest rejects CRLF in target host', () => {
     assert.throws(
@@ -233,3 +235,148 @@ function makeSelfSignedCert() {
         cleanup: () => rmSync(dir, { recursive: true, force: true }),
     };
 }
+
+function createMitmConnectProxy({ cert, key, headerFactory, delayMs = 0 }) {
+    let connectCount = 0;
+    const server = net.createServer((sock) => {
+        let buf = Buffer.alloc(0);
+        let handedOff = false;
+        sock.on('data', (d) => {
+            if (handedOff) return;
+            buf = Buffer.concat([buf, d]);
+            if (buf.indexOf('\r\n\r\n') === -1) return;
+            handedOff = true;
+            connectCount += 1;
+            const id = connectCount;
+            sock.write(
+                'HTTP/1.1 200 Connection Established\r\n' +
+                headerFactory({ id }) +
+                '\r\n',
+            );
+            const tlsSock = new tls.TLSSocket(sock, { isServer: true, cert, key });
+            tlsSock.on('secure', async () => {
+                if (delayMs) await delay(delayMs);
+                let httpBuf = Buffer.alloc(0);
+                const tryRespond = () => {
+                    if (!httpBuf.includes('\r\n\r\n')) return;
+                    const reqLine = httpBuf.toString('utf8').split('\r\n')[0];
+                    const body = JSON.stringify({ ok: true, id, reqLine });
+                    tlsSock.write(
+                        'HTTP/1.1 200 OK\r\n' +
+                        'Content-Type: application/json\r\n' +
+                        `Content-Length: ${Buffer.byteLength(body)}\r\n` +
+                        'Connection: close\r\n' +
+                        '\r\n' +
+                        body,
+                    );
+                    tlsSock.end();
+                };
+                tlsSock.on('data', (chunk) => {
+                    httpBuf = Buffer.concat([httpBuf, chunk]);
+                    tryRespond();
+                });
+            });
+        });
+        sock.on('error', () => {});
+    });
+    return server;
+}
+
+test('axios does not merge CONNECT Set-Cookie into origin response.headers', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        headerFactory: () =>
+            'X-ProxyMesh-IP: 203.0.113.9\r\nSet-Cookie: session=attacker-injected\r\nLocation: https://evil.example/\r\n',
+    });
+    await listen(proxy);
+    try {
+        const { port } = proxy.address();
+        const client = await createProxyAxios({
+            proxy: `http://127.0.0.1:${port}`,
+        });
+        client.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+        const response = await client.get('https://127.0.0.1/');
+        assert.equal(response.proxyHeaders.get('x-proxymesh-ip'), '203.0.113.9');
+        assert.equal(response.proxyHeaders.get('set-cookie'), 'session=attacker-injected');
+        assert.equal(response.headers['set-cookie'], undefined);
+        assert.equal(response.headers.location, undefined);
+        assert.match(String(response.headers['content-type']), /application\/json/);
+    } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('concurrent axios requests keep per-response CONNECT headers', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        delayMs: 200,
+        headerFactory: ({ id }) => `X-ProxyMesh-IP: 198.51.100.${id}\r\nX-Race-Id: ${id}\r\n`,
+    });
+    await listen(proxy);
+    try {
+        const { port } = proxy.address();
+        const client = await createProxyAxios({
+            proxy: `http://127.0.0.1:${port}`,
+        });
+        client.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+        client.proxyAgent.maxSockets = 10;
+        const results = await Promise.all(
+            ['/a', '/b', '/c', '/d'].map(async (path) => {
+                const response = await client.get(`https://127.0.0.1${path}`);
+                return {
+                    body: response.data,
+                    raceId: response.proxyHeaders.get('x-race-id'),
+                    ip: response.proxyHeaders.get('x-proxymesh-ip'),
+                };
+            }),
+        );
+        for (const row of results) {
+            assert.equal(row.ip, `198.51.100.${row.body.id}`);
+            assert.equal(row.raceId, String(row.body.id));
+        }
+    } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('getProxyHeaders reads CONNECT headers from the TLS socket', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        headerFactory: () => 'X-ProxyMesh-IP: 192.0.2.8\r\n',
+    });
+    await listen(proxy);
+    try {
+        const { port } = proxy.address();
+        const agent = new ProxyHeadersAgent(`http://127.0.0.1:${port}`, {
+            tlsOptions: { rejectUnauthorized: false },
+        });
+        const incoming = await new Promise((resolve, reject) => {
+            const req = https.request({
+                hostname: '127.0.0.1',
+                port: 443,
+                path: '/',
+                method: 'GET',
+                agent,
+                rejectUnauthorized: false,
+            }, (res) => {
+                res.resume();
+                res.on('end', () => resolve(res));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+        const headers = getProxyHeaders(incoming);
+        assert.equal(headers.get('x-proxymesh-ip'), '192.0.2.8');
+    } finally {
+        proxy.close();
+        cleanup();
+    }
+});

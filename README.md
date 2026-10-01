@@ -40,6 +40,20 @@ Then install the HTTP client(s) you use (for example `axios`, `got`, `ky`, `wret
 
 > **Note:** This package has no runtime dependencies by default—install only the adapters you need.
 
+## 1.0 breaking changes
+
+CONNECT response headers are **not** copied onto origin `response.headers`. Read them from the per-request `proxyHeaders` Map so concurrent requests stay isolated and hop-by-hop CONNECT headers cannot impersonate origin headers (`Set-Cookie`, `Location`, and similar).
+
+```javascript
+// v0.x (removed)
+response.headers['x-proxymesh-ip']
+
+// v1.x
+response.proxyHeaders.get('x-proxymesh-ip')
+```
+
+`agent.lastProxyHeaders` still exists as a last-write-wins snapshot. Prefer `response.proxyHeaders` (or `getProxyHeaders()`) under concurrency.
+
 ## Quick Start
 
 ### axios
@@ -54,8 +68,7 @@ const client = createProxyAxios({
 
 const response = await client.get('https://httpbin.org/ip');
 
-// Proxy headers are merged into response.headers
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### node-fetch
@@ -83,7 +96,7 @@ const client = createProxyGot({
 });
 
 const response = await client('https://httpbin.org/ip');
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### undici
@@ -160,8 +173,7 @@ const res = await proxyNeedleGet('https://httpbin.org/ip', {
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
 
-// CONNECT response headers merged onto res.headers where missing
-console.log(res.headers['x-proxymesh-ip']);
+console.log(res.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### typed-rest-client
@@ -177,8 +189,9 @@ const client = createProxyRestClient({
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
 
-await client.get('https://httpbin.org/ip');
-console.log(client.proxyAgent.lastProxyHeaders?.get('x-proxymesh-ip'));
+const response = await client.get('https://httpbin.org/ip');
+console.log(response.result);
+console.log(response.proxyHeaders?.get('x-proxymesh-ip'));
 ```
 
 ### Core Agent (Advanced)
@@ -186,7 +199,7 @@ console.log(client.proxyAgent.lastProxyHeaders?.get('x-proxymesh-ip'));
 For direct control, use the core `ProxyHeadersAgent`:
 
 ```javascript
-import { ProxyHeadersAgent } from 'javascript-proxy-headers';
+import { ProxyHeadersAgent, getProxyHeaders } from 'javascript-proxy-headers';
 import https from 'https';
 
 const agent = new ProxyHeadersAgent('http://proxy.example.com:8080', {
@@ -197,7 +210,7 @@ const agent = new ProxyHeadersAgent('http://proxy.example.com:8080', {
 });
 
 https.get('https://httpbin.org/ip', { agent }, (res) => {
-    // Handle response
+    console.log(getProxyHeaders(res)?.get('x-proxymesh-ip'));
 });
 ```
 

@@ -14,6 +14,11 @@ export interface CreateProxyGotOptions {
   gotOptions?: object;
 }
 
+export interface GotResponseWithProxyHeaders<T = unknown> extends GotResponse<T> {
+  /** CONNECT response headers for this request (not merged into origin headers) */
+  proxyHeaders: Map<string, string>;
+}
+
 export interface ProxyGotInstance extends Got {
   proxyAgent: ProxyHeadersAgent;
 }
