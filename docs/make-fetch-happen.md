@@ -69,6 +69,8 @@ console.log(res.proxyHeaders.get('x-proxymesh-ip'));
 
 Use `response.proxyHeaders.get('x-proxymesh-ip')` on the wrapped response. `fetch.proxyAgent.lastProxyHeaders` is last-write-wins and is not safe under concurrency.
 
+Cached responses (`cachePath`) restore the CONNECT headers from the original network fetch for this fetch instance. They do not reuse `lastProxyHeaders` from a later request. After a process restart the in-memory map is empty, so a disk cache hit may have an empty `proxyHeaders` Map rather than another request's CONNECT metadata.
+
 ## Synchronous Factory
 
 Unlike some adapters, `createProxyMakeFetchHappen` is **not** async: it returns the wrapped fetch immediately.

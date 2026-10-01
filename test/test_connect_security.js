@@ -246,6 +246,7 @@ function createMitmConnectProxy({
     keepAlive = false,
     originStatus = 200,
     originStatusText = originStatus === 200 ? 'OK' : 'Error',
+    originCacheControl = null,
 }) {
     let connectCount = 0;
     const server = net.createServer((sock) => {
@@ -274,10 +275,14 @@ function createMitmConnectProxy({
                     httpBuf = httpBuf.subarray(sep + 4);
                     const body = JSON.stringify({ ok: originStatus === 200, id, reqLine });
                     const connHdr = keepAlive ? 'Connection: keep-alive\r\n' : 'Connection: close\r\n';
+                    const cacheHdr = originCacheControl
+                        ? `Cache-Control: ${originCacheControl}\r\n`
+                        : '';
                     tlsSock.write(
                         `HTTP/1.1 ${originStatus} ${originStatusText}\r\n` +
                         'Content-Type: application/json\r\n' +
                         `Content-Length: ${Buffer.byteLength(body)}\r\n` +
+                        cacheHdr +
                         connHdr +
                         '\r\n' +
                         body,
@@ -467,6 +472,51 @@ test('make-fetch-happen keep-alive reuse does not pick lastProxyHeaders', async 
         fetch?.proxyAgent.destroy();
         proxy.close();
         cleanup();
+    }
+});
+
+test('make-fetch-happen cache hit does not pick lastProxyHeaders', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const cacheDir = mkdtempSync(join(tmpdir(), 'jph-mfh-cache-'));
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        originCacheControl: 'public, max-age=3600',
+        headerFactory: ({ id }) => `X-ProxyMesh-IP: 198.51.100.${id}\r\nX-Race-Id: ${id}\r\n`,
+    });
+    await listen(proxy);
+    let fetch;
+    try {
+        const { port } = proxy.address();
+        fetch = createProxyMakeFetchHappen({
+            proxy: `http://127.0.0.1:${port}`,
+            cachePath: cacheDir,
+            cache: 'force-cache',
+            retry: false,
+        });
+        fetch.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+
+        const first = await fetch('https://127.0.0.1/cached');
+        const firstBody = await first.json();
+        assert.equal(first.proxyHeaders.get('x-race-id'), String(firstBody.id));
+
+        const other = await fetch('https://127.0.0.2/other');
+        const otherBody = await other.json();
+        assert.equal(other.proxyHeaders.get('x-race-id'), String(otherBody.id));
+        assert.notEqual(String(otherBody.id), String(firstBody.id));
+        assert.equal(fetch.proxyAgent.lastProxyHeaders.get('x-race-id'), String(otherBody.id));
+
+        const cached = await fetch('https://127.0.0.1/cached');
+        const cachedBody = await cached.json();
+        assert.equal(cached.headers.get('x-local-cache-status'), 'hit');
+        assert.equal(cachedBody.id, firstBody.id);
+        assert.equal(cached.proxyHeaders.get('x-race-id'), String(firstBody.id));
+        assert.notEqual(cached.proxyHeaders.get('x-race-id'), String(otherBody.id));
+    } finally {
+        fetch?.proxyAgent.destroy();
+        proxy.close();
+        cleanup();
+        rmSync(cacheDir, { recursive: true, force: true });
     }
 });
 
