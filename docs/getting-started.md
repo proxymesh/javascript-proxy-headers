@@ -28,7 +28,7 @@ npm install typed-rest-client
 
 Use [ky](ky.md) or [wretch](wretch.md) together with `node-fetch` (the adapters build on the same proxy-aware fetch as the node-fetch module).
 
-## 1.0 breaking changes
+## 0.3.0 breaking changes
 
 CONNECT headers are no longer merged into origin `response.headers`. Use `response.proxyHeaders.get('x-proxymesh-ip')` instead. That keeps CONNECT metadata off the origin response (so `Set-Cookie` / `Location` from the proxy hop cannot impersonate the target) and keeps concurrent requests isolated.
 

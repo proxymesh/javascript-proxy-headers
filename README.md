@@ -40,15 +40,15 @@ Then install the HTTP client(s) you use (for example `axios`, `got`, `ky`, `wret
 
 > **Note:** This package has no runtime dependencies by default—install only the adapters you need.
 
-## 1.0 breaking changes
+## 0.3.0 breaking changes
 
 CONNECT response headers are **not** copied onto origin `response.headers`. Read them from the per-request `proxyHeaders` Map so concurrent requests stay isolated and hop-by-hop CONNECT headers cannot impersonate origin headers (`Set-Cookie`, `Location`, and similar).
 
 ```javascript
-// v0.x (removed)
+// ≤0.2.x (removed)
 response.headers['x-proxymesh-ip']
 
-// v1.x
+// 0.3.x
 response.proxyHeaders.get('x-proxymesh-ip')
 ```
 
