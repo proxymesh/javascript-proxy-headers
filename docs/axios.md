@@ -29,8 +29,8 @@ const response = await client.get('https://httpbin.org/ip');
 // Access response data
 console.log(response.data);
 
-// Access proxy response headers (merged into response.headers)
-console.log(response.headers['x-proxymesh-ip']);
+// Access proxy CONNECT headers (not merged into origin response.headers)
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ## API Reference
@@ -93,29 +93,16 @@ const response = await post('https://httpbin.org/post', { key: 'value' }, {
 
 ## Accessing Proxy Headers
 
-Proxy response headers are automatically merged into `response.headers`:
+CONNECT response headers are on `response.proxyHeaders` (a `Map`). They are **not** copied onto origin `response.headers`.
 
 ```javascript
 const response = await client.get('https://httpbin.org/ip');
 
-// Proxy headers are available in response.headers
-const proxyIp = response.headers['x-proxymesh-ip'];
-const proxyCountry = response.headers['x-proxymesh-country'];
+const proxyIp = response.proxyHeaders.get('x-proxymesh-ip');
+const proxyCountry = response.proxyHeaders.get('x-proxymesh-country');
 ```
 
-You can also access the underlying agent to get the last proxy headers:
-
-```javascript
-const client = await createProxyAxios({
-    proxy: 'http://proxy:8080',
-    proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
-});
-
-await client.get('https://httpbin.org/ip');
-
-// Access via the agent
-console.log(client.proxyAgent.lastProxyHeaders);
-```
+`client.proxyAgent.lastProxyHeaders` is a last-write-wins snapshot of the most recent CONNECT. Use `response.proxyHeaders` for concurrent requests. Non-2xx responses attach the same Map on `error.response.proxyHeaders`.
 
 ## All Request Methods
 

@@ -66,8 +66,7 @@ const client = await createProxyAxios({
 
 const response = await client.get('https://httpbin.org/ip');
 
-// Proxy headers are merged into response.headers
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 See the [Getting Started](getting-started.md) guide for more examples.

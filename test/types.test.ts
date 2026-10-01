@@ -3,6 +3,7 @@ import {
   parseProxyUrl,
   parseTargetUrl,
   buildConnectRequest,
+  getProxyHeaders,
 } from "javascript-proxy-headers";
 import { createProxyAxios, type ProxyAxiosInstance, type CreateProxyAxiosOptions } from "javascript-proxy-headers/axios";
 import { createProxyFetch, type ProxyResponse } from "javascript-proxy-headers/node-fetch";
@@ -39,6 +40,7 @@ async function typecheck() {
   const axiosPromise: Promise<ProxyAxiosInstance> = createProxyAxios(axiosOptions);
   const axiosInstance = await axiosPromise;
   axiosInstance.proxyAgent.lastProxyHeaders;
+  void getProxyHeaders;
 
   const proxyFetch = createProxyFetch({
     proxy: "http://proxy.example.com:8080",

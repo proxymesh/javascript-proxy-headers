@@ -30,7 +30,7 @@ console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 
 ### createProxyMakeFetchHappen(options)
 
-Builds `make-fetch-happen` with a `ProxyHeadersAgent`, then wraps the fetch so each response includes `proxyHeaders` from the last CONNECT.
+Builds `make-fetch-happen` with a `ProxyHeadersAgent`, then wraps the fetch so each response includes `proxyHeaders` from **that request's** CONNECT.
 
 **Parameters:**
 
@@ -44,7 +44,7 @@ Builds `make-fetch-happen` with a `ProxyHeadersAgent`, then wraps the fetch so e
 **Returns:** A `fetch` function with:
 
 - `.defaults(url, opts)` — same pattern as make-fetch-happen, still wrapped with `ProxyResponse`
-- `.proxyAgent` — the `ProxyHeadersAgent` instance (for example `fetch.proxyAgent.lastProxyHeaders`)
+- `.proxyAgent` — the `ProxyHeadersAgent` instance
 
 **Example:**
 
@@ -67,7 +67,9 @@ console.log(res.proxyHeaders.get('x-proxymesh-ip'));
 
 ## Accessing Proxy Headers
 
-Use `response.proxyHeaders.get('x-proxymesh-ip')` on the wrapped response, or read `fetch.proxyAgent.lastProxyHeaders` after a request.
+Use `response.proxyHeaders.get('x-proxymesh-ip')` on the wrapped response. `fetch.proxyAgent.lastProxyHeaders` is last-write-wins and is not safe under concurrency.
+
+Cached responses (`cachePath`) restore the CONNECT headers from the original network fetch for this fetch instance. They do not reuse `lastProxyHeaders` from a later request. After a process restart the in-memory map is empty, so a disk cache hit may have an empty `proxyHeaders` Map rather than another request's CONNECT metadata.
 
 ## Synchronous Factory
 

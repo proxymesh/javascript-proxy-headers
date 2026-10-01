@@ -13,8 +13,8 @@ export interface ProxyPluginOptions {
 }
 
 export interface ProxyResponse extends Response {
-  /** Headers from proxy CONNECT response */
-  proxyHeaders?: Map<string, string>;
+  /** CONNECT response headers for this request (not merged into origin headers) */
+  proxyHeaders: Map<string, string>;
 }
 
 export function proxyPlugin(

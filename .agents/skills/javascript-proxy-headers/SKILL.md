@@ -46,7 +46,7 @@ const client = createProxyAxios({
 });
 
 const response = await client.get('https://httpbin.org/ip');
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### node-fetch
@@ -73,7 +73,7 @@ const client = createProxyGot({
 });
 
 const response = await client('https://httpbin.org/ip');
-console.log(response.headers['x-proxymesh-ip']);
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ### undici
