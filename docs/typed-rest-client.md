@@ -24,9 +24,7 @@ const client = createProxyRestClient({
 });
 
 const response = await client.get('https://httpbin.org/ip');
-// RestClient API: response has statusCode, result, etc.
-
-console.log(client.proxyAgent.lastProxyHeaders?.get('x-proxymesh-ip'));
+console.log(response.proxyHeaders?.get('x-proxymesh-ip'));
 ```
 
 ## API Reference
@@ -45,7 +43,7 @@ console.log(client.proxyAgent.lastProxyHeaders?.get('x-proxymesh-ip'));
 | `options.proxyHeaders` | `Object` | CONNECT headers |
 | `options.onProxyConnect` | `Function` | CONNECT callback |
 
-**Returns:** A `RestClient` instance with an extra `proxyAgent` property (`ProxyHeadersAgent`) for inspecting the last CONNECT response.
+**Returns:** A `RestClient` instance with an extra `proxyAgent` property (`ProxyHeadersAgent`). Rest responses include `proxyHeaders` from that request's CONNECT.
 
 **Example:**
 
@@ -60,13 +58,13 @@ const client = createProxyRestClient({
     onProxyConnect: (h) => console.log(h.get('x-proxymesh-ip')),
 });
 
-await client.get('/v1/resource');
-console.log(client.proxyAgent.lastProxyHeaders);
+const response = await client.get('/v1/resource');
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ## Accessing Proxy Headers
 
-Use `client.proxyAgent.lastProxyHeaders` after a request (a `Map`). The typed-rest-client response objects do not merge proxy headers into application response headers the way axios does.
+Prefer `response.proxyHeaders.get('header-name')` on the RestClient result. `client.proxyAgent.lastProxyHeaders` is a last-write-wins snapshot and is not safe if the client is used concurrently. CONNECT headers are not merged into origin response headers.
 
 ## Factory
 

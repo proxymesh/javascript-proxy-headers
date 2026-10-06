@@ -27,8 +27,8 @@ const response = await client('https://httpbin.org/ip');
 // Access response data
 console.log(response.body);
 
-// Access proxy response headers (merged into response.headers)
-console.log(response.headers['x-proxymesh-ip']);
+// Access proxy CONNECT headers (not merged into origin response.headers)
+console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ## API Reference
@@ -89,15 +89,12 @@ const response = await proxyPost('https://httpbin.org/post', {
 
 ## Accessing Proxy Headers
 
-Proxy response headers are merged into `response.headers` and also available via `response.proxyHeaders`:
+CONNECT response headers are on `response.proxyHeaders` (a `Map`). They are **not** copied onto origin `response.headers`.
 
 ```javascript
 const response = await client('https://httpbin.org/ip');
 
-// Merged into response.headers
-const proxyIp = response.headers['x-proxymesh-ip'];
-
-// Also available separately
+const proxyIp = response.proxyHeaders.get('x-proxymesh-ip');
 const proxyHeaders = response.proxyHeaders; // Map
 ```
 
