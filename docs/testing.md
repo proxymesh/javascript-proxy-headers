@@ -190,9 +190,7 @@ const client = await createProxyAxios({
 });
 ```
 
-### Check Last Proxy Headers
-
-After a request, check the agent's `lastProxyHeaders`:
+### Check Per-Response Proxy Headers
 
 ```javascript
 const client = await createProxyAxios({
@@ -200,10 +198,11 @@ const client = await createProxyAxios({
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
 
-await client.get('https://httpbin.org/ip');
-
-console.log('Last proxy headers:', client.proxyAgent.lastProxyHeaders);
+const response = await client.get('https://httpbin.org/ip');
+console.log('CONNECT headers:', response.proxyHeaders);
 ```
+
+`client.proxyAgent.lastProxyHeaders` is only a last-write-wins snapshot. Use `response.proxyHeaders` when requests may overlap.
 
 ## Common Issues
 

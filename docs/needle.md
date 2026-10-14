@@ -1,6 +1,6 @@
 # needle
 
-[needle](https://github.com/tomas/needle) is a lean HTTP client for Node. This package routes HTTPS through `ProxyHeadersAgent` and merges CONNECT response headers into the needle response where the same keys are not already set.
+[needle](https://github.com/tomas/needle) is a lean HTTP client for Node. This package routes HTTPS through `ProxyHeadersAgent` and exposes CONNECT response headers on `res.proxyHeaders`.
 
 ## Getting Started
 
@@ -21,9 +21,7 @@ const res = await proxyNeedleGet('https://httpbin.org/ip', {
 });
 
 console.log(res.body);
-// CONNECT headers merged into res.headers when missing
-console.log(res.headers['x-proxymesh-ip']);
-console.log(res.proxyAgent.lastProxyHeaders);
+console.log(res.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
 ## API Reference
@@ -67,7 +65,7 @@ const res = await get('https://httpbin.org/ip');
 
 ## Accessing Proxy Headers
 
-Prefer `res.headers['x-proxymesh-ip']` after merge, or `res.proxyAgent.lastProxyHeaders` for the raw `Map` from the last CONNECT.
+Use `res.proxyHeaders.get('x-proxymesh-ip')`. CONNECT headers are not merged into origin `res.headers`. `res.proxyAgent.lastProxyHeaders` is a last-write-wins snapshot of the shared agent.
 
 ## Core Agent
 
