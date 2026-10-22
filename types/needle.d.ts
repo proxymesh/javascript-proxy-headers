@@ -6,7 +6,13 @@ export interface ProxyNeedleOptions {
   needleOptions?: Record<string, unknown>;
 }
 
-export function proxyNeedleGet(url: string, options: ProxyNeedleOptions): Promise<unknown>;
+export interface NeedleResponseWithProxyHeaders {
+  proxyHeaders: Map<string, string>;
+  proxyAgent: import('./index.js').ProxyHeadersAgent;
+  [key: string]: unknown;
+}
+
+export function proxyNeedleGet(url: string, options: ProxyNeedleOptions): Promise<NeedleResponseWithProxyHeaders>;
 
 export interface CreateProxyNeedleOptions {
   proxy: string;

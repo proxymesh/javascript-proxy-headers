@@ -14,6 +14,11 @@ export interface CreateProxyAxiosOptions {
   axiosOptions?: object;
 }
 
+export interface AxiosResponseWithProxyHeaders<T = any> extends AxiosResponse<T> {
+  /** CONNECT response headers for this request (not merged into origin headers) */
+  proxyHeaders: Map<string, string>;
+}
+
 export interface ProxyAxiosInstance extends AxiosInstance {
   proxyAgent: ProxyHeadersAgent;
 }
