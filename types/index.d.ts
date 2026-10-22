@@ -36,7 +36,11 @@ export class ProxyHeadersAgent extends Agent {
     readonly proxyTlsOptions: object;
     /** Headers to send to proxy */
     readonly proxyHeaders: Record<string, string>;
-    /** Headers from last CONNECT response */
+    /**
+     * Headers from the most recently completed CONNECT.
+     * Last-write-wins if the agent is used concurrently — use
+     * `getProxyHeaders()` or adapter `response.proxyHeaders` instead.
+     */
     lastProxyHeaders: Map<string, string> | null;
 }
 
@@ -87,3 +91,13 @@ export function buildConnectRequest(
 ): string;
 export function parseConnectResponse(data: Buffer | string): ConnectResponse | null;
 export function hasCompleteHeaders(buffer: Buffer): boolean;
+export function attachProxyHeaders(
+    socket: object | null | undefined,
+    headers: Map<string, string> | null | undefined,
+): void;
+export function getProxyHeadersFromSocket(
+    socket: object | null | undefined,
+): Map<string, string> | undefined;
+export function getProxyHeaders(
+    source?: object | null,
+): Map<string, string> | undefined;

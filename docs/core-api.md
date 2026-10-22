@@ -32,7 +32,7 @@ new ProxyHeadersAgent(proxy, options)
 ### Example
 
 ```javascript
-import { ProxyHeadersAgent } from 'javascript-proxy-headers';
+import { ProxyHeadersAgent, getProxyHeaders } from 'javascript-proxy-headers';
 import https from 'https';
 
 const agent = new ProxyHeadersAgent('http://proxy.example.com:8080', {
@@ -56,7 +56,7 @@ const req = https.request({
     res.on('data', chunk => body += chunk);
     res.on('end', () => {
         console.log(body);
-        console.log('Last proxy headers:', agent.lastProxyHeaders);
+        console.log('CONNECT headers:', getProxyHeaders(res));
     });
 });
 
@@ -72,7 +72,7 @@ req.end();
 | `proxyAuth` | `string \| null` | Base64-encoded proxy auth |
 | `proxyProtocol` | `string` | Proxy URL protocol (`http:` or `https:`) |
 | `proxyHeaders` | `Object` | Headers to send to proxy |
-| `lastProxyHeaders` | `Map \| null` | Headers from last CONNECT response |
+| `lastProxyHeaders` | `Map \| null` | Most recent CONNECT headers (last-write-wins under concurrency) |
 
 ## ConnectError
 
@@ -184,6 +184,20 @@ const response = parseConnectResponse(buffer);
 // }
 ```
 
+### getProxyHeaders(source)
+
+Return the CONNECT `Map` attached to a TLS socket, Node `IncomingMessage`, or HTTP client response. Use this instead of `agent.lastProxyHeaders` when requests may overlap.
+
+```javascript
+import { ProxyHeadersAgent, getProxyHeaders } from 'javascript-proxy-headers';
+import https from 'https';
+
+const agent = new ProxyHeadersAgent('http://proxy:8080');
+https.get('https://example.com/', { agent }, (res) => {
+    console.log(getProxyHeaders(res)?.get('x-proxymesh-ip'));
+});
+```
+
 ## Using with Other Libraries
 
 The core agent can be used with any library that accepts an `https.Agent`:
@@ -205,10 +219,10 @@ import { fetch, setGlobalDispatcher, Agent } from 'undici';
 
 ### With needle
 
-For normal use, prefer the [needle adapter](needle.md) (`proxyNeedleGet` / `createProxyNeedle`), which merges CONNECT headers onto the response. To wire the agent yourself:
+For normal use, prefer the [needle adapter](needle.md) (`proxyNeedleGet` / `createProxyNeedle`), which exposes CONNECT headers on `res.proxyHeaders`. To wire the agent yourself:
 
 ```javascript
-import { ProxyHeadersAgent } from 'javascript-proxy-headers';
+import { ProxyHeadersAgent, getProxyHeaders } from 'javascript-proxy-headers';
 import needle from 'needle';
 
 const agent = new ProxyHeadersAgent('http://proxy:8080', {
@@ -217,7 +231,7 @@ const agent = new ProxyHeadersAgent('http://proxy:8080', {
 
 needle.get('https://httpbin.org/ip', { agent }, (err, resp) => {
     console.log(resp.body);
-    console.log(agent.lastProxyHeaders);
+    console.log(getProxyHeaders(resp)?.get('x-proxymesh-ip'));
 });
 ```
 
