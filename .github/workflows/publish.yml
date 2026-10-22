@@ -16,7 +16,7 @@ jobs:
     if: >-
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Explicit job permissions: org default token scopes must not block OIDC.
     # actions: write is required for setup-node's npm cache save (contents: read alone
     # can restore but not reserve/write caches → "token has no writable scopes").
