@@ -1,7 +1,7 @@
 {
   "name": "javascript-proxy-headers",
   "version": "0.3.0",
-  "description": "Extensions for JavaScript HTTP libraries to support sending and receiving custom proxy headers during HTTPS CONNECT tunneling",
+  "description": "Send and read custom proxy headers on HTTPS CONNECT for axios, got, node-fetch, undici, ky and more",
   "type": "module",
   "main": "index.js",
   "types": "types/index.d.ts",
@@ -60,7 +60,8 @@
   ],
   "scripts": {
     "release:pr": "node scripts/create-release-pr.mjs",
-    "test:unit": "node --test test/test_connect_security.js",
+    "test:unit": "node --test test/test_connect_security.js test/test_proxy_traversal.js",
+    "test:local-proxy": "node test/local-mock-integration.js",
     "test": "node test/test_proxy_headers.js core axios node-fetch got undici superagent ky wretch make-fetch-happen needle typed-rest-client",
     "test:run": "node run_tests.js",
     "test:verbose": "node test/test_proxy_headers.js -v",
@@ -72,24 +73,31 @@
   },
   "keywords": [
     "proxy",
+    "proxy-headers",
     "http",
     "https",
+    "https-proxy",
+    "https-proxy-agent",
+    "proxy-agent",
     "connect",
     "tunnel",
     "headers",
     "axios",
     "fetch",
+    "node-fetch",
     "got",
     "undici",
     "superagent",
     "proxymesh",
+    "rotating-proxy",
     "web-scraping",
     "http-client",
     "ky",
     "wretch",
     "make-fetch-happen",
     "needle",
-    "typed-rest-client"
+    "typed-rest-client",
+    "x-proxymesh-ip"
   ],
   "author": {
     "name": "ProxyMesh",
@@ -109,18 +117,18 @@
     "url": "https://proxymesh.com"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.19.0"
   },
   "peerDependencies": {
     "axios": "^1.0.0",
-    "got": "^12.0.0 || ^13.0.0 || ^14.0.0",
-    "ky": "^2.0.0",
-    "make-fetch-happen": "^14.0.0",
+    "got": "^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0",
+    "ky": "^1.0.0 || ^2.0.0",
+    "make-fetch-happen": "^14.0.0 || ^15.0.0 || ^16.0.0",
     "needle": "^3.0.0",
     "node-fetch": "^3.0.0",
     "superagent": "^8.0.0 || ^9.0.0 || ^10.0.0",
-    "typed-rest-client": "^2.0.0",
-    "undici": "^5.0.0 || ^6.0.0 || ^7.0.0",
+    "typed-rest-client": "^2.0.0 || ^3.0.0",
+    "undici": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
     "wretch": "^2.0.0 || ^3.0.0"
   },
   "peerDependenciesMeta": {

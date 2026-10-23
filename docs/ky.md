@@ -2,6 +2,8 @@
 
 [ky](https://github.com/sindresorhus/ky) is a small HTTP client built on `fetch`. This package wires ky to a custom `fetch` implemented with [node-fetch](node-fetch.md) and `ProxyHeadersAgent`, so CONNECT proxy headers work the same way as in the node-fetch adapter.
 
+ky 1 receives that node-fetch response directly. ky 2 (including 2.2+, which throws `The fetch option must resolve with a Response` for a node-fetch `Response`) receives a global `Response` with the same `proxyHeaders` Map attached. `node-fetch` is still required.
+
 ## Getting Started
 
 ### Prerequisites
@@ -71,4 +73,4 @@ const res = await api.get('v1/status').json();
 
 ## Accessing Proxy Headers
 
-Responses are [`ProxyResponse`](node-fetch.md) instances: use `response.proxyHeaders.get('x-proxymesh-ip')` (and the usual `response.json()`, `response.text()`, etc.). Proxy CONNECT failures use the same errors as the underlying fetch stack; see [Core API](core-api.md) for `ConnectError` on the agent.
+Use `response.proxyHeaders.get('x-proxymesh-ip')` (and the usual `response.json()`, `response.text()`, etc.). On ky 2, `response` is a global `Response`; `proxyHeaders` is an own property and is not copied by `response.clone()`. Proxy CONNECT failures use the same errors as the underlying fetch stack; see [Core API](core-api.md) for `ConnectError` on the agent.

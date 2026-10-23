@@ -1,7 +1,8 @@
-[![npm version](https://badge.fury.io/js/javascript-proxy-headers.svg)](https://badge.fury.io/js/javascript-proxy-headers)
 # JavaScript Proxy Headers
 
-Extensions for JavaScript HTTP libraries to support **sending and receiving custom proxy headers** during HTTPS CONNECT tunneling.
+[![npm version](https://badge.fury.io/js/javascript-proxy-headers.svg)](https://badge.fury.io/js/javascript-proxy-headers)
+
+Send and read custom proxy headers on HTTPS CONNECT for axios, got, node-fetch, undici, ky, and more.
 
 ## The Problem
 
@@ -28,7 +29,7 @@ This library solves both problems for popular JavaScript HTTP libraries.
 | [needle](https://github.com/tomas/needle) | `javascript-proxy-headers/needle` | Lean HTTP client |
 | [typed-rest-client](https://github.com/microsoft/typed-rest-client) | `javascript-proxy-headers/typed-rest-client` | Azure / DevOps–style REST client |
 
-**urllib** is not integrated yet: it expects an [undici](https://undici.nodejs.org/) `Dispatcher`, not a Node `Agent`. See `notes/urllib-integration-deferred.md` in this repo for a possible approach.
+**urllib** is not integrated yet: it expects an [undici](https://undici.nodejs.org/) `Dispatcher`, not a Node `Agent`. See [notes/urllib-integration-deferred.md](https://github.com/proxymesh/javascript-proxy-headers/blob/main/notes/urllib-integration-deferred.md) for a possible approach.
 
 ## Installation
 
@@ -61,7 +62,7 @@ response.proxyHeaders.get('x-proxymesh-ip')
 ```javascript
 import { createProxyAxios } from 'javascript-proxy-headers/axios';
 
-const client = createProxyAxios({
+const client = await createProxyAxios({
     proxy: 'http://user:pass@proxy.example.com:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
@@ -90,7 +91,7 @@ console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```javascript
 import { createProxyGot } from 'javascript-proxy-headers/got';
 
-const client = createProxyGot({
+const client = await createProxyGot({
     proxy: 'http://user:pass@proxy.example.com:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
@@ -234,13 +235,15 @@ Verbose (`-v`) prints captured header values. See `test/test_proxy_headers.js --
 
 ## Requirements
 
-- Node.js >= 18.0.0
+- Node.js >= 22.19.0 (undici 8, got 16, and ky 2 require current Node 22)
 - One or more supported HTTP libraries
 
-## Related Projects
+## Other languages
 
-- **[python-proxy-headers](https://github.com/proxymesh/python-proxy-headers)** - Same functionality for Python
-- **[proxy-examples](https://github.com/proxymesh/proxy-examples)** - Example code for using proxies
+- **[python-proxy-headers](https://github.com/proxymesh/python-proxy-headers)** — requests, urllib3, httpx, and aiohttp
+- **[ruby-proxy-headers](https://github.com/proxymesh/ruby-proxy-headers)** — Net::HTTP, Faraday, HTTParty, Excon, and Typhoeus
+- **[scrapy-proxy-headers](https://github.com/proxymesh/scrapy-proxy-headers)** — Scrapy download handler
+- **[proxy-examples](https://github.com/proxymesh/proxy-examples)** — example proxy code
 
 ## About
 
@@ -248,4 +251,4 @@ Created by [ProxyMesh](https://proxymesh.com) to help our customers use custom h
 
 ## License
 
-MIT License
+[MIT](https://github.com/proxymesh/javascript-proxy-headers/blob/main/LICENSE)

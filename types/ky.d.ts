@@ -5,6 +5,8 @@ export interface CreateProxyKyOptions {
   proxyHeaders?: Record<string, string>;
   onProxyConnect?: (headers: Map<string, string>) => void;
   proxyTlsOptions?: object;
+  /** TLS options for the connection to the origin */
+  tlsOptions?: object;
   kyOptions?: KyOptions;
 }
 

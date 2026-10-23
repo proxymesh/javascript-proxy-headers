@@ -1,0 +1,59 @@
+# Weekly (and manual) run against the latest published versions of every
+# supported HTTP client. Ignores the lockfile for those clients. Does not
+# change Dependabot auto-merge.
+
+name: Latest clients
+
+on:
+  schedule:
+    # Monday 12:00 UTC, after the weekly Dependabot window.
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  latest:
+    name: latest clients (Node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "24"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install lockfile dependencies
+        run: npm ci
+
+      - name: Install latest supported clients (ignore the lockfile)
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock \
+            axios@latest \
+            got@latest \
+            ky@latest \
+            make-fetch-happen@latest \
+            needle@latest \
+            node-fetch@latest \
+            superagent@latest \
+            typed-rest-client@latest \
+            undici@latest \
+            wretch@latest
+          npm ls --depth=0 axios got ky make-fetch-happen needle node-fetch superagent typed-rest-client undici wretch
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Local mock-proxy integration (includes proxy-traversal assertion)
+        run: npm run test:local-proxy
