@@ -78,12 +78,13 @@ We at [ProxyMesh](https://proxymesh.com) created these extension modules to supp
 ## Related Projects
 
 - **[python-proxy-headers](https://github.com/proxymesh/python-proxy-headers)** - Same functionality for Python
+- **[ruby-proxy-headers](https://github.com/proxymesh/ruby-proxy-headers)** - Same functionality for Ruby
 - **[proxy-examples](https://github.com/proxymesh/proxy-examples)** - Example code for using proxies
 - **[scrapy-proxy-headers](https://github.com/proxymesh/scrapy-proxy-headers)** - Proxy header support for Scrapy
 
 ## Requirements
 
-- Node.js >= 18.0.0
+- Node.js >= 22.19.0
 - One or more supported HTTP libraries
 
 ## License

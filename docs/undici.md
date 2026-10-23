@@ -2,6 +2,8 @@
 
 [undici](https://undici.nodejs.org/) is a fast HTTP/1.1 client from the Node.js core team. It powers the native `fetch` in Node.js 18+. This page describes how to use undici with proxies and how to send and receive custom proxy headers.
 
+HTTPS requests use a custom undici connector. The connector opens the proxy tunnel with `ProxyHeadersAgent` (custom CONNECT headers in, CONNECT response headers out) and hands undici the TLS socket only after CONNECT succeeds. Do not pass a pre-opened socket as `connect: { socket }`: undici's default connector ignores that option and dials the origin directly, which bypasses the proxy. Plain HTTP is forwarded with undici `ProxyAgent` and its `headers` option (undici PR #1877); that path does not expose a separate CONNECT response. Pass `requestTls` for origin TLS options such as `{ rejectUnauthorized: false }`. undici 8 requires Node.js >= 22.19.0.
+
 ## Getting Started
 
 ### Prerequisites
@@ -45,7 +47,8 @@ Make an HTTP request through a proxy with custom headers.
 |------|------|-------------|
 | `url` | `string \| URL` | Target URL |
 | `options.proxy` | `string` | Proxy URL (required) |
-| `options.proxyHeaders` | `Object` | Headers to send to the proxy |
+| `options.proxyHeaders` | `Object` | Headers to send to the proxy on CONNECT |
+| `options.requestTls` | `Object` | TLS options for the origin connection |
 | `options.method` | `string` | HTTP method (default: 'GET') |
 | `options.headers` | `Object` | Request headers |
 | `options.body` | `*` | Request body |

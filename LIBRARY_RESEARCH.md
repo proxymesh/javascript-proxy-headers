@@ -120,7 +120,7 @@ console.log(response.proxyHeaders.get('X-ProxyMesh-IP'));
 ```javascript
 import { createProxyGot } from 'javascript-proxy-headers/got';
 
-const proxyGot = createProxyGot({
+const proxyGot = await createProxyGot({
     proxy: 'http://proxy:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });

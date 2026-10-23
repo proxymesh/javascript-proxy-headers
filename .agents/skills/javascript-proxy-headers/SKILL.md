@@ -40,7 +40,7 @@ Install your HTTP client as a peer dependency (axios, got, node-fetch, etc.).
 ```javascript
 import { createProxyAxios } from 'javascript-proxy-headers/axios';
 
-const client = createProxyAxios({
+const client = await createProxyAxios({
     proxy: 'http://user:pass@proxy.example.com:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
@@ -67,7 +67,7 @@ console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```javascript
 import { createProxyGot } from 'javascript-proxy-headers/got';
 
-const client = createProxyGot({
+const client = await createProxyGot({
     proxy: 'http://user:pass@proxy.example.com:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
