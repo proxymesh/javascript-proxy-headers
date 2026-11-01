@@ -2,6 +2,8 @@
 
 [ky](https://github.com/sindresorhus/ky) is a small HTTP client built on `fetch`. This package wires ky to a custom `fetch` implemented with [node-fetch](node-fetch.md) and `ProxyHeadersAgent`, so CONNECT proxy headers work the same way as in the node-fetch adapter.
 
+ky 2.2+ throws `The fetch option must resolve with a Response` for a node-fetch `Response`. The adapter therefore returns a global `Response` with the same `proxyHeaders` Map attached. `node-fetch` is still required.
+
 ## Getting Started
 
 ### Prerequisites
@@ -25,7 +27,7 @@ const api = await createProxyKy({
 const response = await api('https://httpbin.org/ip');
 const data = await response.json();
 
-// CONNECT response headers (ProxyResponse)
+// CONNECT response headers
 console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```
 
@@ -71,4 +73,4 @@ const res = await api.get('v1/status').json();
 
 ## Accessing Proxy Headers
 
-Responses are [`ProxyResponse`](node-fetch.md) instances: use `response.proxyHeaders.get('x-proxymesh-ip')` (and the usual `response.json()`, `response.text()`, etc.). Proxy CONNECT failures use the same errors as the underlying fetch stack; see [Core API](core-api.md) for `ConnectError` on the agent.
+Use `response.proxyHeaders.get('x-proxymesh-ip')` (and the usual `response.json()`, `response.text()`, etc.). `response` is a global `Response`; `proxyHeaders` is an own property and is not copied by `response.clone()`. Proxy CONNECT failures use the same errors as the underlying fetch stack; see [Core API](core-api.md) for `ConnectError` on the agent.
