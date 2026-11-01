@@ -46,6 +46,8 @@ Make an HTTP request through a proxy with custom headers.
 | `url` | `string \| URL` | Target URL |
 | `options.proxy` | `string` | Proxy URL (required) |
 | `options.proxyHeaders` | `Object` | Headers to send to the proxy |
+| `options.proxyTlsOptions` | `Object` | TLS options for an `https://` proxy |
+| `options.tlsOptions` | `Object` | TLS options for the origin connection over the CONNECT tunnel |
 | `options.method` | `string` | HTTP method (default: 'GET') |
 | `options.headers` | `Object` | Request headers |
 | `options.body` | `*` | Request body |

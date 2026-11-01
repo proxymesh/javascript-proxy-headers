@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import tls from 'node:tls';
+import http from 'node:http';
 import https from 'node:https';
 
 import {
@@ -21,8 +22,10 @@ import {
 } from '../lib/core/utils.js';
 import { ProxyHeadersAgent } from '../lib/core/proxy-headers-agent.js';
 import { createProxyAxios } from '../lib/axios-proxy.js';
+import { createProxyGot } from '../lib/got-proxy.js';
 import { createProxyMakeFetchHappen } from '../lib/make-fetch-happen-proxy.js';
 import { createProxyRestClient } from '../lib/typed-rest-client-proxy.js';
+import { request as undiciProxyRequest } from '../lib/undici-proxy.js';
 import { getProxyHeaders } from '../lib/core/proxy-headers-store.js';
 
 test('buildConnectRequest rejects CRLF in target host', () => {
@@ -551,6 +554,167 @@ test('getProxyHeaders reads CONNECT headers from the TLS socket', async () => {
         const headers = getProxyHeaders(incoming);
         assert.equal(headers.get('x-proxymesh-ip'), '192.0.2.8');
     } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('undici HTTPS sends origin traffic through the CONNECT tunnel', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const proxy = createMitmConnectProxy({
+        cert,
+        key,
+        headerFactory: () => 'X-ProxyMesh-IP: 203.0.113.80\r\n',
+    });
+    await listen(proxy);
+    try {
+        const { port } = proxy.address();
+        const { statusCode, body, proxyHeaders } = await undiciProxyRequest(
+            'https://127.0.0.1/',
+            {
+                proxy: `http://127.0.0.1:${port}`,
+                tlsOptions: { rejectUnauthorized: false },
+            },
+        );
+        const data = await body.json();
+        assert.equal(statusCode, 200);
+        assert.equal(data.ok, true);
+        assert.equal(proxyHeaders.get('x-proxymesh-ip'), '203.0.113.80');
+    } finally {
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('undici HTTPS does not dial the origin when CONNECT is not forwarded', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const originHits = [];
+    const origin = https.createServer({ cert, key }, (req, res) => {
+        originHits.push(req.url);
+        res.end('{"via":"origin"}');
+    });
+    origin.on('connection', () => originHits.push('tcp'));
+    await listen(origin);
+    const originPort = origin.address().port;
+
+    const proxy = net.createServer((sock) => {
+        let buf = Buffer.alloc(0);
+        sock.on('data', (d) => {
+            buf = Buffer.concat([buf, d]);
+            if (buf.includes('\r\n\r\n')) {
+                sock.write('HTTP/1.1 200 Connection Established\r\nX-ProxyMesh-IP: 198.51.100.9\r\n\r\n');
+            }
+        });
+        sock.on('error', () => {});
+    });
+    await listen(proxy);
+    const proxyPort = proxy.address().port;
+
+    try {
+        await assert.rejects(
+            () => undiciProxyRequest(`https://127.0.0.1:${originPort}/secret`, {
+                proxy: `http://127.0.0.1:${proxyPort}`,
+                tlsOptions: { rejectUnauthorized: false },
+                connectTimeout: 1500,
+            }),
+        );
+        await delay(50);
+        assert.equal(originHits.length, 0);
+    } finally {
+        origin.close();
+        proxy.close();
+        cleanup();
+    }
+});
+
+test('got rejects plain HTTP so it cannot bypass the proxy', async () => {
+    const httpHits = [];
+    const httpOrigin = http.createServer((req, res) => {
+        httpHits.push(req.url);
+        res.end('{"via":"http"}');
+    });
+    await listen(httpOrigin);
+    const httpPort = httpOrigin.address().port;
+
+    const proxyHits = [];
+    const proxy = net.createServer((sock) => {
+        sock.on('data', (d) => proxyHits.push(d.toString('utf8').split('\r\n')[0]));
+        sock.on('error', () => {});
+    });
+    await listen(proxy);
+    const proxyPort = proxy.address().port;
+
+    try {
+        const client = await createProxyGot({
+            proxy: `http://127.0.0.1:${proxyPort}`,
+            gotOptions: { throwHttpErrors: false },
+        });
+        await assert.rejects(
+            () => client(`http://127.0.0.1:${httpPort}/plain`),
+            /only supports HTTPS/,
+        );
+        assert.equal(httpHits.length, 0);
+        assert.equal(proxyHits.length, 0);
+    } finally {
+        httpOrigin.close();
+        proxy.close();
+    }
+});
+
+test('got refuses HTTPS to HTTP redirects that would bypass the proxy', async () => {
+    const { cert, key, cleanup } = makeSelfSignedCert();
+    const httpHits = [];
+    const httpOrigin = http.createServer((req, res) => {
+        httpHits.push(req.url);
+        res.end('{"via":"http-direct"}');
+    });
+    await listen(httpOrigin);
+    const httpPort = httpOrigin.address().port;
+
+    const proxy = net.createServer((sock) => {
+        let buf = Buffer.alloc(0);
+        let handed = false;
+        sock.on('data', (d) => {
+            if (handed) return;
+            buf = Buffer.concat([buf, d]);
+            if (buf.indexOf('\r\n\r\n') === -1) return;
+            handed = true;
+            sock.write('HTTP/1.1 200 Connection Established\r\nX-ProxyMesh-IP: 198.51.100.9\r\n\r\n');
+            const tlsSock = new tls.TLSSocket(sock, { isServer: true, cert, key });
+            tlsSock.on('secure', () => {
+                let httpBuf = Buffer.alloc(0);
+                tlsSock.on('data', (chunk) => {
+                    httpBuf = Buffer.concat([httpBuf, chunk]);
+                    if (httpBuf.indexOf('\r\n\r\n') === -1) return;
+                    const location = `http://127.0.0.1:${httpPort}/leaked`;
+                    tlsSock.end(
+                        'HTTP/1.1 302 Found\r\n' +
+                        `Location: ${location}\r\n` +
+                        'Content-Length: 0\r\nConnection: close\r\n\r\n',
+                    );
+                });
+            });
+        });
+        sock.on('error', () => {});
+    });
+    await listen(proxy);
+    const proxyPort = proxy.address().port;
+
+    try {
+        const client = await createProxyGot({
+            proxy: `http://127.0.0.1:${proxyPort}`,
+            gotOptions: { throwHttpErrors: false },
+        });
+        client.proxyAgent.tlsOptions = { rejectUnauthorized: false };
+
+        await assert.rejects(
+            () => client('https://127.0.0.1/start'),
+            /HTTP would bypass the proxy/,
+        );
+        await delay(50);
+        assert.equal(httpHits.length, 0);
+    } finally {
+        httpOrigin.close();
         proxy.close();
         cleanup();
     }
