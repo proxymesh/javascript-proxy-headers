@@ -92,25 +92,34 @@ test('undici HTTPS traffic goes through the proxy tunnel', async () => {
 });
 
 test('ky resolves fetch with a Response and traverses the proxy', async () => {
-    await withTunnel(async ({ origin, proxy }) => {
-        const api = await createProxyKy({
-            proxy: proxy.url,
-            proxyHeaders: { 'X-ProxyMesh-Country': 'US' },
-            tlsOptions: { rejectUnauthorized: false },
-            kyOptions: { retry: 0, timeout: 10000 },
+    const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    try {
+        await withTunnel(async ({ origin, proxy }) => {
+            const api = await createProxyKy({
+                proxy: proxy.url,
+                proxyHeaders: { 'X-ProxyMesh-Country': 'US' },
+                kyOptions: { retry: 0, timeout: 10000 },
+            });
+            const response = await api(origin.url);
+            const kyMajor = Number(packageVersion('ky').split('.')[0]);
+            if (kyMajor >= 2) {
+                const isResponse = response instanceof Response
+                    || Object.prototype.toString.call(response) === '[object Response]';
+                assert.equal(isResponse, true, 'ky 2 fetch must resolve with a Response');
+            }
+            assert.equal(response.proxyHeaders.get('x-proxymesh-ip'), FAKE_PROXY_IP);
+            const body = await response.json();
+            assert.equal(body.ok, true);
+            assertTraversed(proxy, origin.port);
         });
-        const response = await api(origin.url);
-        const kyMajor = Number(packageVersion('ky').split('.')[0]);
-        if (kyMajor >= 2) {
-            const isResponse = response instanceof Response
-                || Object.prototype.toString.call(response) === '[object Response]';
-            assert.equal(isResponse, true, 'ky 2 fetch must resolve with a Response');
+    } finally {
+        if (previous === undefined) {
+            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+        } else {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous;
         }
-        assert.equal(response.proxyHeaders.get('x-proxymesh-ip'), FAKE_PROXY_IP);
-        const body = await response.json();
-        assert.equal(body.ok, true);
-        assertTraversed(proxy, origin.port);
-    });
+    }
 });
 
 test('typed-rest-client _getAgent override tunnels HTTPS on v2 and v3', async () => {
