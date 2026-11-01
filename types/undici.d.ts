@@ -5,10 +5,10 @@ export interface UndiciRequestOptions {
   proxyHeaders?: Record<string, string>;
   /** TLS options for an https:// proxy */
   proxyTlsOptions?: object;
-  /** TLS options for the connection to the origin (https only) */
-  requestTls?: object;
-  /** Alias of requestTls */
+  /** TLS options for the origin connection over the CONNECT tunnel */
   tlsOptions?: object;
+  /** CONNECT/TLS handshake timeout in ms for the origin connection */
+  connectTimeout?: number;
   /** HTTP method */
   method?: string;
   /** Request headers */

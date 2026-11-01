@@ -89,6 +89,8 @@ const response = await proxyPost('https://httpbin.org/post', {
 
 ## Accessing Proxy Headers
 
+This adapter is HTTPS-only. `http://` URLs and HTTPS→HTTP redirects are rejected so traffic cannot silently bypass the proxy (got would otherwise use a default HTTP agent and connect directly).
+
 CONNECT response headers are on `response.proxyHeaders` (a `Map`). They are **not** copied onto origin `response.headers`.
 
 ```javascript

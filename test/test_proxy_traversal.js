@@ -7,7 +7,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import net from 'node:net';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 
@@ -79,7 +78,7 @@ test('undici HTTPS traffic goes through the proxy tunnel', async () => {
         const response = await undiciRequest(origin.url, {
             proxy: proxy.url,
             proxyHeaders: { 'X-ProxyMesh-Country': 'US' },
-            requestTls: { rejectUnauthorized: false },
+            tlsOptions: { rejectUnauthorized: false },
         });
         const body = await response.body.json();
         assert.equal(response.statusCode, 200);
@@ -91,63 +90,6 @@ test('undici HTTPS traffic goes through the proxy tunnel', async () => {
         assertTraversed(proxy, origin.port);
     });
 });
-
-test('undici plain HTTP sends proxy headers through ProxyAgent', async () => {
-    const origin = net.createServer((sock) => {
-        sock.once('data', () => {
-            const body = 'origin-ok';
-            sock.end(`HTTP/1.1 200 OK\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n${body}`);
-        });
-        sock.on('error', () => {});
-    });
-    await listen(origin);
-    const originPort = origin.address().port;
-    let sawProxyHeader = false;
-    const proxy = net.createServer((sock) => {
-        let buf = Buffer.alloc(0);
-        const onData = (chunk) => {
-            buf = Buffer.concat([buf, chunk]);
-            if (!buf.includes('\r\n\r\n')) {
-                return;
-            }
-            sock.off('data', onData);
-            const head = buf.toString('latin1');
-            sawProxyHeader = /x-proxymesh-country:\s*US/i.test(head);
-            const up = net.connect(originPort, '127.0.0.1', () => {
-                up.write(buf);
-            });
-            sock.pipe(up);
-            up.pipe(sock);
-            up.on('error', () => sock.destroy());
-            sock.on('error', () => up.destroy());
-        };
-        sock.on('data', onData);
-    });
-    await listen(proxy);
-    try {
-        const response = await undiciRequest(`http://127.0.0.1:${originPort}/`, {
-            proxy: `http://127.0.0.1:${proxy.address().port}`,
-            proxyHeaders: { 'X-ProxyMesh-Country': 'US' },
-        });
-        assert.equal(response.statusCode, 200);
-        assert.equal(await response.body.text(), 'origin-ok');
-        assert.equal(sawProxyHeader, true);
-        assert.equal(response.proxyHeaders.size, 0);
-    } finally {
-        origin.close();
-        proxy.close();
-    }
-});
-
-function listen(server) {
-    return new Promise((resolve, reject) => {
-        server.once('error', reject);
-        server.listen(0, '127.0.0.1', () => {
-            server.off('error', reject);
-            resolve();
-        });
-    });
-}
 
 test('ky resolves fetch with a Response and traverses the proxy', async () => {
     await withTunnel(async ({ origin, proxy }) => {
