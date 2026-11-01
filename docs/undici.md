@@ -48,6 +48,7 @@ Make an HTTP request through a proxy with custom headers.
 | `options.proxyHeaders` | `Object` | Headers to send to the proxy |
 | `options.proxyTlsOptions` | `Object` | TLS options for an `https://` proxy |
 | `options.tlsOptions` | `Object` | TLS options for the origin connection over the CONNECT tunnel |
+| `options.connectTimeout` | `number` | Origin CONNECT/TLS handshake timeout in milliseconds |
 | `options.method` | `string` | HTTP method (default: 'GET') |
 | `options.headers` | `Object` | Request headers |
 | `options.body` | `*` | Request body |
