@@ -599,11 +599,13 @@ test('undici HTTPS does not dial the origin when CONNECT is not forwarded', asyn
 
     const proxy = net.createServer((sock) => {
         let buf = Buffer.alloc(0);
+        let replied = false;
         sock.on('data', (d) => {
+            if (replied) return;
             buf = Buffer.concat([buf, d]);
-            if (buf.includes('\r\n\r\n')) {
-                sock.write('HTTP/1.1 200 Connection Established\r\nX-ProxyMesh-IP: 198.51.100.9\r\n\r\n');
-            }
+            if (!buf.includes('\r\n\r\n')) return;
+            replied = true;
+            sock.write('HTTP/1.1 200 Connection Established\r\nX-ProxyMesh-IP: 198.51.100.9\r\n\r\n');
         });
         sock.on('error', () => {});
     });
@@ -611,19 +613,62 @@ test('undici HTTPS does not dial the origin when CONNECT is not forwarded', asyn
     const proxyPort = proxy.address().port;
 
     try {
+        const started = Date.now();
         await assert.rejects(
             () => undiciProxyRequest(`https://127.0.0.1:${originPort}/secret`, {
                 proxy: `http://127.0.0.1:${proxyPort}`,
                 tlsOptions: { rejectUnauthorized: false },
-                connectTimeout: 1500,
+                connectTimeout: 500,
             }),
+            (err) => {
+                assert.equal(err.code, 'UND_ERR_CONNECT_TIMEOUT');
+                assert.match(String(err.message), /timeout: 500ms/);
+                return true;
+            },
         );
+        const elapsed = Date.now() - started;
+        assert.ok(elapsed < 4000, `connectTimeout was ignored (elapsed ${elapsed}ms)`);
         await delay(50);
         assert.equal(originHits.length, 0);
     } finally {
         origin.close();
         proxy.close();
         cleanup();
+    }
+});
+
+test('undici feeds bytes pipelined with the CONNECT response into origin TLS', async () => {
+    const proxy = net.createServer((sock) => {
+        let buf = Buffer.alloc(0);
+        let replied = false;
+        sock.on('data', (d) => {
+            if (replied) return;
+            buf = Buffer.concat([buf, d]);
+            if (!buf.includes('\r\n\r\n')) return;
+            replied = true;
+            sock.write('HTTP/1.1 200 Connection Established\r\n\r\nNOT-A-TLS-RECORD');
+        });
+        sock.on('error', () => {});
+    });
+    await listen(proxy);
+    const proxyPort = proxy.address().port;
+
+    try {
+        const started = Date.now();
+        await assert.rejects(
+            () => undiciProxyRequest('https://127.0.0.1/', {
+                proxy: `http://127.0.0.1:${proxyPort}`,
+                tlsOptions: { rejectUnauthorized: false },
+                connectTimeout: 5000,
+            }),
+        );
+        const elapsed = Date.now() - started;
+        assert.ok(
+            elapsed < 1500,
+            `pipelined tunnel bytes were dropped (elapsed ${elapsed}ms)`,
+        );
+    } finally {
+        proxy.close();
     }
 });
 
