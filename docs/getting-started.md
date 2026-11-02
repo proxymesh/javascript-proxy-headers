@@ -34,6 +34,8 @@ CONNECT headers are no longer merged into origin `response.headers`. Use `respon
 
 `agent.lastProxyHeaders` is last-write-wins. Prefer per-response `proxyHeaders` or `getProxyHeaders()`.
 
+The got adapter is HTTPS-only: `http://` URLs and HTTPS→HTTP redirects are rejected so they cannot bypass the proxy. The undici adapter wraps origin TLS on the CONNECT socket (`httpSocket`) rather than dialing the target directly.
+
 ## Quick Examples
 
 ### axios

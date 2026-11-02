@@ -57,6 +57,7 @@ async function typecheck() {
   const undiciOptions: UndiciRequestOptions = {
     proxy: "http://proxy.example.com:8080",
     headers: { "x-test": "1" },
+    tlsOptions: { rejectUnauthorized: true },
   };
   const undiciResp: UndiciResponse = await request("https://example.com", undiciOptions);
   void undiciResp.proxyHeaders;
