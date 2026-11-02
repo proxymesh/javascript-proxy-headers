@@ -34,6 +34,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Run typecheck
+        run: npm run test:types
+
       - name: Require PROXY_URL Actions secret
         env:
           PROXY_URL: ${{ secrets.PROXY_URL }}
