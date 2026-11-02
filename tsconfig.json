@@ -9,7 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "lib": ["ES2020", "DOM"],
-    "baseUrl": ".",
     "paths": {
       "javascript-proxy-headers": ["./types/index.d.ts"],
       "javascript-proxy-headers/axios": ["./types/axios.d.ts"],
