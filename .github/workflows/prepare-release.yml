@@ -17,10 +17,14 @@ permissions: {}
 jobs:
   prepare:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
     steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = "refs/heads/main"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
@@ -31,9 +35,67 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Open release pull request
+      - id: version
         env:
           RELEASE_VERSION: ${{ inputs.version }}
-          PREPARE_FROM_CHECKOUT: "1"
+        run: echo "version=$(node scripts/release.mjs plan)" >> "$GITHUB_OUTPUT"
+
+      - name: Bump package version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: npm version "$RELEASE_VERSION" --no-git-tag-version
+
+      - name: Set jsr.json version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const path = "jsr.json";
+          const version = process.env.RELEASE_VERSION;
+          const text = readFileSync(path, "utf8");
+          const next = text.replace(/"version": "[^"]+"/, `"version": "${version}"`);
+          if (next === text) {
+            console.error("jsr.json has no version field");
+            process.exit(1);
+          }
+          writeFileSync(path, next);
+          EOF
+
+      - name: Move changelog section
+        run: node scripts/release.mjs changelog
+
+      - name: Create release branch
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: git checkout -b "release/${RELEASE_VERSION}"
+
+      - name: Check release
+        run: node scripts/release.mjs check
+
+      - name: Build package
+        run: npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP"
+
+      - name: Commit and push
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json jsr.json package-lock.json CHANGELOG.md
+          git commit -m "chore(release): bump version to ${RELEASE_VERSION}"
+          git push --set-upstream origin "release/${RELEASE_VERSION}"
+
+      - name: Open pull request
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/create-release-pr.mjs
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          node scripts/release.mjs notes > "${RUNNER_TEMP}/notes.md"
+          gh pr create \
+            --base main \
+            --head "release/${RELEASE_VERSION}" \
+            --title "Release ${RELEASE_VERSION}" \
+            --body-file "${RUNNER_TEMP}/notes.md"

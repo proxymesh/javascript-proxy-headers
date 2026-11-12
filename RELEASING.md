@@ -3,33 +3,28 @@
 ## Cut a release
 
 1. Add notes under `## Unreleased` in `CHANGELOG.md`.
-2. Run Actions → **Prepare release**. Set `version` to `X.Y.Z`, or to `patch`, `minor`, or `major`.
-3. The workflow pushes `release/X.Y.Z` and opens a pull request titled `Release X.Y.Z`. The body is the new changelog section. Merge it after **Release check** passes.
-4. If the pull request shows **Approve workflows to run**, approve it. A pull request opened with the Actions token waits for that approval before checks start.
+2. Run Actions → **Prepare release** on `main`. Set `version` to `X.Y.Z`, or to `patch`, `minor`, or `major`.
 
-From a clone:
+   ```bash
+   gh workflow run "Prepare release" --ref main -f version=X.Y.Z
+   ```
 
-```bash
-npm run release:pr -- X.Y.Z
-```
-
-`patch`, `minor`, and `major` work too. Omit the argument for a patch bump. Push the branch to this repository.
+3. The workflow bumps the version, moves the changelog, runs the release checks, then pushes `release/X.Y.Z` and opens a pull request titled `Release X.Y.Z`. The body is the new changelog section. Merge the pull request yourself.
+4. A pull request opened with the Actions token does not start `pull_request` workflows. Prepare release runs the checks before it pushes. If GitHub shows **Approve workflows to run**, approve it so the pull request checks can run.
 
 ## What runs
 
-**Prepare release** creates `release/X.Y.Z` from `main`, sets the version in `package.json`, `jsr.json`, and the root `package-lock.json` fields, and moves `## Unreleased` to `## X.Y.Z - YYYY-MM-DD`.
+### Prepare release
 
-**Release check** runs on pull requests. On `release/X.Y.Z` the branch name, version manifests, and a dated changelog section must match, and `npm pack` must succeed. Other pull requests check that the manifests match and that `## Unreleased` exists.
+Creates `release/X.Y.Z` from `main`. `npm version` sets `package.json` and `package-lock.json`. A small step sets `jsr.json`. `scripts/release.mjs` moves `## Unreleased` to `## X.Y.Z - YYYY-MM-DD`. The job then runs the release check and `npm pack` before the push.
 
-**Publish** runs when a push to `main` is the merge of a `release/X.Y.Z` pull request from this repository. It publishes to npm (`npm publish --access public --provenance`, GitHub OIDC) and JSR (`npx jsr publish`, GitHub OIDC), then creates tag `vX.Y.Z` and a GitHub Release whose notes are that changelog section. The job uses the `release` environment. Other pushes to `main` stop at the gate.
+### Release check
 
-Re-run **Publish** on that commit if it fails after the registry has accepted the version. A re-run skips a registry that already has this commit and skips an existing tag. If the version is on npm or JSR from another commit, the job fails and leaves the tag uncreated.
+On pull requests into `main`, the job **Release check** runs the same version and changelog check, `node --test scripts/release.test.mjs`, and `npm pack`. For a `release/X.Y.Z` head, the branch name, `package.json`, `jsr.json`, `package-lock.json`, and a dated changelog section must match. Other pull requests check that those manifests match and that `## Unreleased` exists.
 
-### Tags
+### Publish
 
-New tags are `vX.Y.Z` (for example `v0.4.1`).
-
-Tags through `0.4.0` used a hyphen: `v-0.2.0` through `v-0.4.0`. Those tags stay as they are.
+On a push to `main`, a short step reads the merged pull request. The `publish` job runs only for a `release/X.Y.Z` pull request from this repository. It uses the `release` environment and publishes with `npm publish --provenance --access public` and `npx --yes jsr@0.14.3 publish` (GitHub OIDC). A version already on npm or JSR fails that command. The `github-release` job then runs `gh release view` or `gh release create` for tag `vX.Y.Z`, with the changelog section as the notes.
 
 ## One-time owner setup
 
@@ -44,5 +39,11 @@ Do this before the next release. This change does not create a tag or publish a 
    - The new publisher must complete a publish within 2 days or it expires. Keep the current publisher until that publish succeeds, then delete the old one.
 3. Confirm `@proxymesh/javascript-proxy-headers` on JSR is linked to `proxymesh/javascript-proxy-headers`. That link is JSR trusted publishing. JSR has no environment field and no token in this workflow.
 4. Under Settings → Actions → General, allow GitHub Actions to create and approve pull requests. Prepare release needs that to open the pull request.
-5. After the publisher with environment `release` has published once, delete repository secrets `NPM_TOKEN`, `NODE_AUTH_TOKEN`, and `JSR_TOKEN` if they are present. The publish job unsets them so a leftover token cannot take precedence over OIDC.
-6. If branch protection still requires **Release on merge**, drop that check. Require **Release check** so a release pull request with a mismatched version or changelog cannot merge.
+5. After the publisher with environment `release` has published once, delete repository secrets `NPM_TOKEN`, `NODE_AUTH_TOKEN`, and `JSR_TOKEN` if they are present. The npm publish step unsets `NODE_AUTH_TOKEN` and `NPM_TOKEN` so a leftover token cannot take precedence over OIDC.
+6. If branch protection still requires **Release on merge**, drop that check. Require **Release check**.
+
+## Tags
+
+New tags are `vX.Y.Z` (for example `v0.4.1`).
+
+Tags through `0.4.0` used a hyphen: `v-0.2.0` through `v-0.4.0`. Those tags stay as they are.

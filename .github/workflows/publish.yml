@@ -1,11 +1,8 @@
 name: Publish
 
-# A push to main lets the release environment limit deployments to main.
-# The merge commit is that push. Detect the release pull request from it.
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -16,35 +13,39 @@ permissions: {}
 jobs:
   gate:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
-      publish: ${{ steps.detect.outputs.publish }}
+      version: ${{ steps.pr.outputs.version }}
     permissions:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-          package-manager-cache: false
-
-      - id: detect
+      - id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/create-release-pr.mjs --detect
+        run: |
+          set -euo pipefail
+          ref="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '
+            [
+              .[]
+              | select(.merged_at != null and .base.ref == "main" and .head.repo.full_name == env.GITHUB_REPOSITORY)
+              | .head.ref
+              | select(test("^release/(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"))
+              | sub("^release/"; "")
+            ]
+            | if length > 1 then error("multiple release pull requests") else (.[0] // "") end
+          ')"
+          printf 'version=%s\n' "$ref" >> "$GITHUB_OUTPUT"
 
   publish:
     needs: gate
-    if: success() && needs.gate.outputs.publish == 'true'
+    if: success() && needs.gate.outputs.version != ''
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     environment: release
     permissions:
-      contents: write
+      contents: read
       id-token: write
-      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -56,7 +57,39 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Publish to npm and JSR
+      - name: Publish to npm
+        run: |
+          unset NODE_AUTH_TOKEN NPM_TOKEN
+          npm publish --provenance --access public
+
+      - name: Publish to JSR
+        run: npx --yes jsr@0.14.3 publish
+
+  github-release:
+    needs: [gate, publish]
+    if: success() && needs.gate.outputs.version != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/create-release-pr.mjs --publish
+        run: |
+          set -euo pipefail
+          V="$(node -p "require('./package.json').version")"
+          node scripts/release.mjs notes > "${RUNNER_TEMP}/notes.md"
+          gh release view "v${V}" || gh release create "v${V}" \
+            --target "$GITHUB_SHA" \
+            --title "$V" \
+            --notes-file "${RUNNER_TEMP}/notes.md"

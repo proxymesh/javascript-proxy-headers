@@ -1,8 +1,8 @@
-# Checks a release pull request before merge. publish.yml publishes after the merge reaches main.
 name: Release check
 
 on:
   pull_request:
+    branches: [main]
 
 permissions: {}
 
@@ -10,6 +10,7 @@ jobs:
   check:
     name: Release check
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -25,10 +26,10 @@ jobs:
       - name: Check version and changelog
         env:
           RELEASE_HEAD_REF: ${{ github.head_ref }}
-        run: node scripts/create-release-pr.mjs --check
+        run: node scripts/release.mjs check
 
       - name: Test the release helper
         run: node --test scripts/release.test.mjs
 
       - name: Build package
-        run: npm pack --ignore-scripts --pack-destination "${RUNNER_TEMP}"
+        run: npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP"
