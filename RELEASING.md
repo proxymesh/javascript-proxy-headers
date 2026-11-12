@@ -30,11 +30,12 @@ A push to `main` runs **lookup**. When the merged pull request comes from this r
 
 Do this before the next release. This change does not create a tag or publish a package.
 
-1. npm already uses trusted publishing. Add a publisher. A saved publisher cannot be edited, so add a second one:
-   - Package `javascript-proxy-headers` on npmjs.com → Settings → Trusted Publisher → Add
-   - Organization `proxymesh`, repository `javascript-proxy-headers`, workflow filename `publish.yml`
-   - Environment name: leave blank
-   - Allow direct `npm publish`. Keep the current publisher until a publish with the new settings succeeds, then delete the old one.
+1. On npmjs.com, open package `javascript-proxy-headers` → Settings → Trusted
+   Publisher and check the existing entry. A match is organization `proxymesh`,
+   repository `javascript-proxy-headers`, workflow `publish.yml`, environment
+   blank, and allow `npm publish`. If it matches, you are done. If the workflow
+   or environment differs, add a publisher with those values (saved publishers
+   cannot be edited), publish once successfully, then delete the old one.
 2. Confirm `@proxymesh/javascript-proxy-headers` on JSR is linked to `proxymesh/javascript-proxy-headers`. That link is JSR trusted publishing. JSR has no environment field and no token in this workflow.
 3. Under Settings → Actions → General, allow GitHub Actions to create and approve pull requests. Prepare release needs that to open the pull request.
 4. After trusted publishing has published once, delete repository secrets `NPM_TOKEN`, `NODE_AUTH_TOKEN`, and `JSR_TOKEN` if they are present. The npm publish step unsets `NODE_AUTH_TOKEN` and `NPM_TOKEN` so a leftover token cannot take precedence over OIDC.
