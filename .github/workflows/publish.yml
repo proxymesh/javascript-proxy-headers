@@ -57,6 +57,11 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
+      - name: Check release
+        env:
+          RELEASE_HEAD_REF: release/${{ needs.gate.outputs.version }}
+        run: node scripts/release.mjs check
+
       - name: Publish to npm
         run: |
           unset NODE_AUTH_TOKEN NPM_TOKEN
@@ -85,11 +90,11 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.gate.outputs.version }}
         run: |
           set -euo pipefail
-          V="$(node -p "require('./package.json').version")"
           node scripts/release.mjs notes > "${RUNNER_TEMP}/notes.md"
-          gh release view "v${V}" || gh release create "v${V}" \
+          gh release view "v${VERSION}" || gh release create "v${VERSION}" \
             --target "$GITHUB_SHA" \
-            --title "$V" \
+            --title "v${VERSION}" \
             --notes-file "${RUNNER_TEMP}/notes.md"

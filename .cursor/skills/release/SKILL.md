@@ -26,7 +26,7 @@ In chat, users may type **`/release`** (patch bump), **`/release minor`**, **`/r
    gh workflow run "Prepare release" --ref main -f version=VERSION
    ```
 
-3. Tell the user to merge the pull request after they have looked at the diff. Prepare release runs the version, changelog, and `npm pack` checks before it pushes, because a pull request it opens does not start `pull_request` workflows. If GitHub shows **Approve workflows to run**, the user approves that so the other checks can run.
+3. Tell the user to merge the pull request after they have looked at the diff. Prepare release runs the version, changelog, and `npm pack` checks before it pushes, because a pull request it opens does not start `pull_request` workflows. To run pull request checks on it, close and reopen the pull request.
 
 ## After merge
 

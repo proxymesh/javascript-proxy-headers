@@ -46,21 +46,7 @@ jobs:
         run: npm version "$RELEASE_VERSION" --no-git-tag-version
 
       - name: Set jsr.json version
-        env:
-          RELEASE_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          node --input-type=module <<'EOF'
-          import { readFileSync, writeFileSync } from "node:fs";
-          const path = "jsr.json";
-          const version = process.env.RELEASE_VERSION;
-          const text = readFileSync(path, "utf8");
-          const next = text.replace(/"version": "[^"]+"/, `"version": "${version}"`);
-          if (next === text) {
-            console.error("jsr.json has no version field");
-            process.exit(1);
-          }
-          writeFileSync(path, next);
-          EOF
+        run: node scripts/release.mjs bump
 
       - name: Move changelog section
         run: node scripts/release.mjs changelog
