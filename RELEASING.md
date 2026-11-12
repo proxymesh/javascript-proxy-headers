@@ -24,22 +24,21 @@ On pull requests into `main`, the job **Release check** runs the same version an
 
 ### Publish
 
-A push to `main` runs **lookup**. When the merged pull request comes from this repo, targets `main`, and its branch is `release/X.Y.Z`, **publish** and **github-release** run; otherwise they are skipped and the `release` environment is not used. **publish** uses that environment and publishes with `npm publish --provenance --access public` and `npx --yes jsr@0.14.3 publish` (GitHub OIDC). A version already on npm or JSR fails that command. **github-release** then runs `gh release view` or `gh release create` for tag `vX.Y.Z`, with the changelog section as the notes.
+A push to `main` runs **lookup**. When the merged pull request comes from this repo, targets `main`, and its branch is `release/X.Y.Z`, **publish** and **github-release** run; otherwise they are skipped. **publish** publishes with `npm publish --provenance --access public` and `npx --yes jsr@0.14.3 publish` (GitHub OIDC). A version already on npm or JSR fails that command. **github-release** then runs `gh release view` or `gh release create` for tag `vX.Y.Z`, with the changelog section as the notes.
 
 ## One-time owner setup
 
 Do this before the next release. This change does not create a tag or publish a package.
 
-1. Create a GitHub Environment named `release` (Settings → Environments). Publish runs on a push to `main`, so a deployment-branch rule can limit it to `main`. Required reviewers are optional.
-2. npm already uses trusted publishing. Add a publisher for the environment. A saved publisher cannot be edited, so add a second one:
+1. npm already uses trusted publishing. Add a publisher. A saved publisher cannot be edited, so add a second one:
    - Package `javascript-proxy-headers` on npmjs.com → Settings → Trusted Publisher → Add
    - Organization `proxymesh`, repository `javascript-proxy-headers`, workflow filename `publish.yml`
-   - Environment name `release`
-   - Allow direct `npm publish`. Keep the current publisher until a publish with environment `release` succeeds, then delete the old one.
-3. Confirm `@proxymesh/javascript-proxy-headers` on JSR is linked to `proxymesh/javascript-proxy-headers`. That link is JSR trusted publishing. JSR has no environment field and no token in this workflow.
-4. Under Settings → Actions → General, allow GitHub Actions to create and approve pull requests. Prepare release needs that to open the pull request.
-5. After the publisher with environment `release` has published once, delete repository secrets `NPM_TOKEN`, `NODE_AUTH_TOKEN`, and `JSR_TOKEN` if they are present. The npm publish step unsets `NODE_AUTH_TOKEN` and `NPM_TOKEN` so a leftover token cannot take precedence over OIDC.
-6. If branch protection still requires Release on merge, drop it. Don't make Release check a required check: release PRs are opened with GITHUB_TOKEN, so it doesn't run on them unless you close and reopen the PR.
+   - Environment name: leave blank
+   - Allow direct `npm publish`. Keep the current publisher until a publish with the new settings succeeds, then delete the old one.
+2. Confirm `@proxymesh/javascript-proxy-headers` on JSR is linked to `proxymesh/javascript-proxy-headers`. That link is JSR trusted publishing. JSR has no environment field and no token in this workflow.
+3. Under Settings → Actions → General, allow GitHub Actions to create and approve pull requests. Prepare release needs that to open the pull request.
+4. After trusted publishing has published once, delete repository secrets `NPM_TOKEN`, `NODE_AUTH_TOKEN`, and `JSR_TOKEN` if they are present. The npm publish step unsets `NODE_AUTH_TOKEN` and `NPM_TOKEN` so a leftover token cannot take precedence over OIDC.
+5. If branch protection still requires Release on merge, drop it. Don't make Release check a required check: release PRs are opened with GITHUB_TOKEN, so it doesn't run on them unless you close and reopen the PR.
 
 ## Tags
 
