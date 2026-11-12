@@ -3,6 +3,8 @@
 
 Extensions for JavaScript HTTP libraries to support **sending and receiving custom proxy headers** during HTTPS CONNECT tunneling.
 
+See [RELEASING.md](RELEASING.md) to publish a new version.
+
 ## The Problem
 
 When making HTTPS requests through a proxy, the connection is established via a CONNECT tunnel. During this process:

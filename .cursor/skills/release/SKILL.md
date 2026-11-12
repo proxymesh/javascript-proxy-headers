@@ -1,49 +1,53 @@
 ---
 name: release
 description: >-
-  Bumps package.json and jsr.json, pushes branch release/VERSION, opens a PR to
-  main with auto-merge, and relies on CI to publish a GitHub release after merge.
-  Use when the user invokes /release or /release VERSION, asks for a release PR,
-  or wants to ship a new semver version.
+  Opens a release/X.Y.Z pull request that bumps package.json, jsr.json, and
+  package-lock.json and moves the CHANGELOG Unreleased section. Merge is
+  manual. After merge, CI publishes to npm and JSR and tags vX.Y.Z. Use when
+  the user invokes /release or /release VERSION, asks for a release PR, or
+  wants to ship a new semver version.
 ---
 
 # Release (`/release` [VERSION])
 
-In chat, users may type **`/release`** (patch bump) or **`/release 1.2.3`** (explicit semver). Treat that as this workflow.
+In chat, users may type **`/release`** (patch bump), **`/release minor`**, **`/release major`**, or **`/release 1.2.3`**. See `RELEASING.md` for what CI runs and the owner setup. Do not publish, tag, or merge unless the user asks.
 
 ## Goal
 
-Cut a **release PR** from `release/<VERSION>` → `main` with version bumps in `package.json` and `jsr.json`. Optional **VERSION** defaults to **patch bump** from the current `package.json` version.
+Cut a **release PR** from `release/<VERSION>` → `main`. Optional **VERSION** defaults to a **patch** bump of `package.json`.
 
 ## Preconditions
 
-- Clean git working tree (no uncommitted changes).
-- `git` and [`gh`](https://cli.github.com/) installed and authenticated (`gh auth login`).
-- Repo default branch is `main`.
-- Remote branch `release/<VERSION>` must not already exist.
+- Clean git working tree.
+- `git` and `gh` installed and authenticated.
+- Default branch is `main`.
+- Remote branch `release/<VERSION>` does not already exist.
+- `CHANGELOG.md` has a `## Unreleased` section. Put the release notes there first.
 
 ## Steps
 
-1. **Resolve VERSION** (if the user did not pass one): read `package.json` `version`, bump **patch** (e.g. `0.2.1` → `0.2.2`).
-2. **Run the automation script** from the repo root (preferred):
+1. Resolve VERSION: explicit `X.Y.Z`, or `patch` / `minor` / `major`. Omitted means patch.
+2. From the repo root:
 
    ```bash
    npm run release:pr -- [VERSION]
    ```
 
-   Or: `node scripts/create-release-pr.mjs [VERSION]`. Omit `[VERSION]` for patch bump.
+   Or: `node scripts/create-release-pr.mjs [VERSION]`.
 
-3. If the script cannot enable auto-merge, tell the user to merge the PR manually once CI passes.
+3. The script bumps `package.json`, `jsr.json`, and the root `package-lock.json` versions, moves `## Unreleased` to `## VERSION - YYYY-MM-DD`, pushes `release/VERSION`, and opens a PR titled `Release VERSION`.
+4. Tell the user to merge the PR after **Release check** passes.
+
+Actions → **Prepare release** opens the same pull request. Approve workflow runs on that PR if GitHub asks.
 
 ## After merge
 
-Merging into `main` triggers `.github/workflows/release-on-merge.yml`, which creates GitHub release tag `v-<VERSION>` and release notes. That **published** release runs `publish.yml` (npm + JSR).
+Merging into `main` runs `.github/workflows/publish.yml`. It publishes to npm and JSR with OIDC, then creates tag `vVERSION` (for example `0.4.1` → `v0.4.1`) and a GitHub Release from the changelog section.
 
-## Tag convention
-
-GitHub release tag: `v-${VERSION}` (e.g. `0.2.2` → tag `v-0.2.2`), matching `publish.yml` expectations.
+Tags through `v-0.4.0` keep the `v-` prefix. Leave those tags in place.
 
 ## Do not
 
-- Commit unrelated files (e.g. stray `site/` or local-only dirs) on the release branch.
-- Bump only one of `package.json` / `jsr.json`; both must match for publish.
+- Commit unrelated files on the release branch.
+- Bump one version manifest and leave the others behind. `package.json`, `jsr.json`, and `package-lock.json` must match.
+- Enable auto-merge on the release pull request.

@@ -1,113 +1,62 @@
 name: Publish
 
+# A push to main lets the release environment limit deployments to main.
+# The merge commit is that push. Detect the release pull request from it.
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
-  # GitHub does not start new workflow runs for events caused by the default
-  # GITHUB_TOKEN (e.g. gh release create in another workflow). After
-  # "Release on merge" creates a release, trigger publish here instead.
-  workflow_run:
-    workflows: [Release on merge]
-    types: [completed]
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
-  publish:
-    if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+  gate:
     runs-on: ubuntu-24.04
-    # Explicit job permissions: org default token scopes must not block OIDC.
-    # actions: write is required for setup-node's npm cache save (contents: read alone
-    # can restore but not reserve/write caches → "token has no writable scopes").
+    outputs:
+      publish: ${{ steps.detect.outputs.publish }}
     permissions:
       contents: read
-      actions: write
-      id-token: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'workflow_run' && 'main' || github.event_name == 'release' && github.ref || 'main' }}
+          persist-credentials: false
 
-      - name: Decide whether to publish
-        id: gate
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
-            echo "publish=true" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-          VERSION="$(node -p "require('./package.json').version")"
-          TAG="v-${VERSION}"
-          if gh release view "${TAG}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            echo "publish=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "No GitHub release ${TAG} yet (or release job was skipped); skipping publish."
-            echo "publish=false" >> "${GITHUB_OUTPUT}"
-          fi
-
-      # Omit registry-url: setup-node otherwise sets NODE_AUTH_TOKEN to a placeholder and npm publish uses that instead of OIDC.
-      # Node 24 ships npm 11.x (≥11.5.1 in current LTS line). Node 22’s npm is 10.x; Corepack `prepare npm@11` does not replace
-      # the toolcache `npm` binary on GitHub-hosted runners, so `npm publish` stayed on 10.x and OIDC trusted publishing never ran.
-      - name: Setup Node
-        if: steps.gate.outputs.publish == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
 
-      - name: Assert npm supports trusted publishing (OIDC)
-        if: steps.gate.outputs.publish == 'true'
-        run: |
-          set -euo pipefail
-          ver="$(npm --version)"
-          echo "npm ${ver}"
-          node -e "
-          const v = process.argv[1].split('.').map(Number);
-          const ok = v[0] > 11 || (v[0] === 11 && (v[1] > 5 || (v[1] === 5 && (v[2] || 0) >= 1)));
-          if (!ok) { console.error('npm ' + process.argv[1] + ' < 11.5.1; trusted publishing OIDC requires npm >= 11.5.1'); process.exit(1); }
-          " "$ver"
+      - id: detect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/create-release-pr.mjs --detect
 
-      - name: Ensure versions match
-        if: steps.gate.outputs.publish == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          PKG_VERSION="$(node -p "require('./package.json').version")"
-          JSR_VERSION="$(node -p "require('./jsr.json').version")"
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          if [[ -z "$TAG_NAME" ]]; then
-            TAG_NAME="v-${PKG_VERSION}"
-          fi
-          if [[ "$PKG_VERSION" != "$JSR_VERSION" ]]; then
-            echo "Version mismatch: package.json=$PKG_VERSION, jsr.json=$JSR_VERSION"
-            exit 1
-          fi
-          if [[ "$TAG_NAME" != "v$PKG_VERSION" && "$TAG_NAME" != "$PKG_VERSION" && "$TAG_NAME" != "v-${PKG_VERSION}" ]]; then
-            echo "Release tag '$TAG_NAME' does not match version '$PKG_VERSION' (expected '$PKG_VERSION', 'v$PKG_VERSION', or 'v-${PKG_VERSION}')."
-            exit 1
-          fi
+  publish:
+    needs: gate
+    if: success() && needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Install dependencies
-        if: steps.gate.outputs.publish == 'true'
-        run: npm install --ignore-scripts --no-package-lock
+      # Omit registry-url. setup-node would set NODE_AUTH_TOKEN and npm would skip OIDC.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
 
-      # If NODE_AUTH_TOKEN / NPM_TOKEN are set to empty or a placeholder (repo/org Variables,
-      # or setup-node + registry-url), npm prefers them over OIDC and fails with ENEEDAUTH.
-      - name: Publish to npm
-        if: steps.gate.outputs.publish == 'true'
-        run: |
-          set -euo pipefail
-          if [[ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" || -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
-            echo "::error::GitHub OIDC is unavailable (missing ACTIONS_ID_TOKEN_*). Check job permissions id-token: write and repo Settings → Actions → Workflow permissions."
-            exit 1
-          fi
-          unset NODE_AUTH_TOKEN NPM_TOKEN
-          npm publish --access public --provenance
-
-      - name: Publish to JSR
-        if: steps.gate.outputs.publish == 'true'
-        run: npx jsr publish
-
+      - name: Publish to npm and JSR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/create-release-pr.mjs --publish
