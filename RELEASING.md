@@ -24,7 +24,7 @@ On pull requests into `main`, the job **Release check** runs the same version an
 
 ### Publish
 
-On a push to `main`, a short step reads the merged pull request. The `publish` job runs only for a `release/X.Y.Z` pull request from this repository. It uses the `release` environment and publishes with `npm publish --provenance --access public` and `npx --yes jsr@0.14.3 publish` (GitHub OIDC). A version already on npm or JSR fails that command. The `github-release` job then runs `gh release view` or `gh release create` for tag `vX.Y.Z`, with the changelog section as the notes.
+A push to `main` runs **lookup**. When the merged pull request comes from this repo, targets `main`, and its branch is `release/X.Y.Z`, **publish** and **github-release** run; otherwise they are skipped and the `release` environment is not used. **publish** uses that environment and publishes with `npm publish --provenance --access public` and `npx --yes jsr@0.14.3 publish` (GitHub OIDC). A version already on npm or JSR fails that command. **github-release** then runs `gh release view` or `gh release create` for tag `vX.Y.Z`, with the changelog section as the notes.
 
 ## One-time owner setup
 
