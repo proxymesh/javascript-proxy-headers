@@ -28,18 +28,11 @@ A push to `main` runs **lookup**. When the merged pull request comes from this r
 
 ## One-time owner setup
 
-Do this before the next release. This change does not create a tag or publish a package.
-
-1. On npmjs.com, open package `javascript-proxy-headers` → Settings → Trusted
-   Publisher and check the existing entry. A match is organization `proxymesh`,
-   repository `javascript-proxy-headers`, workflow `publish.yml`, environment
-   blank, and allow `npm publish`. If it matches, you are done. If the workflow
-   or environment differs, add a publisher with those values (saved publishers
-   cannot be edited), publish once successfully, then delete the old one.
-2. Confirm `@proxymesh/javascript-proxy-headers` on JSR is linked to `proxymesh/javascript-proxy-headers`. That link is JSR trusted publishing. JSR has no environment field and no token in this workflow.
-3. Under Settings → Actions → General, allow GitHub Actions to create and approve pull requests. Prepare release needs that to open the pull request.
-4. After trusted publishing has published once, delete repository secrets `NPM_TOKEN`, `NODE_AUTH_TOKEN`, and `JSR_TOKEN` if they are present. The npm publish step unsets `NODE_AUTH_TOKEN` and `NPM_TOKEN` so a leftover token cannot take precedence over OIDC.
-5. If branch protection still requires Release on merge, drop it. Don't make Release check a required check: release PRs are opened with GITHUB_TOKEN, so it doesn't run on them unless you close and reopen the PR.
+1. Under Settings → Actions → General, allow GitHub Actions to create and approve
+   pull requests. Prepare release needs that to open the pull request.
+2. If branch protection still requires Release on merge, drop it. Don't make
+   Release check a required check: release PRs are opened with GITHUB_TOKEN, so
+   it doesn't run on them unless you close and reopen the PR.
 
 ## Tags
 
