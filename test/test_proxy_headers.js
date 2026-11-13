@@ -43,11 +43,6 @@
  *     1 - One or more tests failed
  */
 
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 // =============================================================================
 // Configuration
 // =============================================================================
@@ -547,7 +542,7 @@ function listModules() {
     }
 }
 
-async function runTests(testNames, config, verbose) {
+async function runTests(testNames, config, _verbose) {
     console.log('='.repeat(60));
     console.log('JavaScript Proxy Headers - Test Harness');
     console.log('='.repeat(60));
