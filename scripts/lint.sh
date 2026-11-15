@@ -45,6 +45,7 @@ main() {
   fi
   check shellcheck shellcheck "${sh_files[@]}"
   check shfmt shfmt -d -i 2 -ci "${sh_files[@]}"
+  check version scripts/check-version.sh
   check eslint npm run lint --silent
 
   if ((${#failed[@]} > 0)); then
