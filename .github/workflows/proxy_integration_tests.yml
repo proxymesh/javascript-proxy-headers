@@ -42,6 +42,11 @@ jobs:
       - name: Run typecheck
         run: npm run test:types
 
+      - name: Check npm and JSR package contents
+        run: |
+          npm pack --dry-run
+          npx --yes jsr publish --dry-run
+
       - name: Require PROXY_URL Actions secret
         env:
           PROXY_URL: ${{ secrets.PROXY_URL }}
