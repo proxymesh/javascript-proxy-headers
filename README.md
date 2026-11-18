@@ -10,7 +10,7 @@ When making HTTPS requests through a proxy, the connection is established via a 
 
 1. **Sending headers to the proxy** - Most JavaScript HTTP libraries don't provide a way to send custom **proxy headers** (like `X-ProxyMesh-Country`) to the proxy server during the CONNECT handshake.
 
-2. **Receiving headers from the proxy** - The proxy's **proxy response headers** from the CONNECT request are typically discarded, making it impossible to read custom headers (like `X-ProxyMesh-IP`) that the proxy sends back.
+2. **Receiving headers from the proxy** - The **proxy response headers** from the CONNECT request are typically discarded, making it impossible to read custom headers (like `X-ProxyMesh-IP`) that the proxy sends back.
 
 This library solves both problems for popular JavaScript HTTP libraries.
 
@@ -40,6 +40,8 @@ npm install javascript-proxy-headers
 Then install the HTTP client(s) you use (for example `axios`, `got`, `ky`, `wretch`, `make-fetch-happen`, `needle`, or `typed-rest-client`). Each is an optional peer dependency.
 
 > **Note:** This package has no runtime dependencies by default—install only the adapters you need.
+
+Requirements:
 
 - Node.js >= 18.0.0
 - One or more supported HTTP libraries
