@@ -1,15 +1,16 @@
-[![npm version](https://badge.fury.io/js/javascript-proxy-headers.svg)](https://badge.fury.io/js/javascript-proxy-headers)
 # JavaScript Proxy Headers
 
-Extensions for JavaScript HTTP libraries to support **sending and receiving custom proxy headers** during HTTPS CONNECT tunneling.
+[![npm version](https://badge.fury.io/js/javascript-proxy-headers.svg)](https://badge.fury.io/js/javascript-proxy-headers)
+
+Extensions for JavaScript HTTP libraries that send custom **proxy headers** on HTTPS CONNECT and read **proxy response headers** back. Works with any proxy provider; works best with ProxyMesh.
 
 ## The Problem
 
 When making HTTPS requests through a proxy, the connection is established via a CONNECT tunnel. During this process:
 
-1. **Sending headers to the proxy** - Most JavaScript HTTP libraries don't provide a way to send custom headers (like `X-ProxyMesh-Country`) to the proxy server during the CONNECT handshake.
+1. **Sending headers to the proxy** - Most JavaScript HTTP libraries don't provide a way to send custom **proxy headers** (like `X-ProxyMesh-Country`) to the proxy server during the CONNECT handshake.
 
-2. **Receiving headers from the proxy** - The proxy's response headers from the CONNECT request are typically discarded, making it impossible to read custom headers (like `X-ProxyMesh-IP`) that the proxy sends back.
+2. **Receiving headers from the proxy** - The **proxy response headers** from the CONNECT request are typically discarded, making it impossible to read custom headers (like `X-ProxyMesh-IP`) that the proxy sends back.
 
 This library solves both problems for popular JavaScript HTTP libraries.
 
@@ -28,7 +29,7 @@ This library solves both problems for popular JavaScript HTTP libraries.
 | [needle](https://github.com/tomas/needle) | `javascript-proxy-headers/needle` | Lean HTTP client |
 | [typed-rest-client](https://github.com/microsoft/typed-rest-client) | `javascript-proxy-headers/typed-rest-client` | Azure / DevOps–style REST client |
 
-**urllib** is not integrated yet: it expects an [undici](https://undici.nodejs.org/) `Dispatcher`, not a Node `Agent`. See `notes/urllib-integration-deferred.md` in this repo for a possible approach.
+**urllib** is not integrated yet: it expects an [undici](https://undici.nodejs.org/) `Dispatcher`, not a Node `Agent`. Until an adapter exists, use `javascript-proxy-headers/undici`.
 
 ## Installation
 
@@ -40,7 +41,14 @@ Then install the HTTP client(s) you use (for example `axios`, `got`, `ky`, `wret
 
 > **Note:** This package has no runtime dependencies by default—install only the adapters you need.
 
-## 0.3.0 breaking changes
+Requirements:
+
+- Node.js >= 18.0.0
+- One or more supported HTTP libraries
+
+## Quick Start
+
+### 0.3.0 breaking changes
 
 CONNECT response headers are **not** copied onto origin `response.headers`. Read them from the per-request `proxyHeaders` Map so concurrent requests stay isolated and hop-by-hop CONNECT headers cannot impersonate origin headers (`Set-Cookie`, `Location`, and similar).
 
@@ -53,8 +61,6 @@ response.proxyHeaders.get('x-proxymesh-ip')
 ```
 
 `agent.lastProxyHeaders` still exists as a last-write-wins snapshot. Prefer `response.proxyHeaders` (or `getProxyHeaders()`) under concurrency.
-
-## Quick Start
 
 ### axios
 
@@ -216,6 +222,12 @@ https.get('https://httpbin.org/ip', { agent }, (res) => {
 
 ## Testing
 
+No-network unit checks:
+
+```bash
+npm run test:unit && npm run test:types
+```
+
 Integration tests need a real proxy (set `PROXY_URL` or `HTTPS_PROXY`):
 
 ```bash
@@ -232,19 +244,20 @@ node test/test_proxy_headers.js -v axios ky
 
 Verbose (`-v`) prints captured header values. See `test/test_proxy_headers.js --help`.
 
-## Requirements
+## Documentation
 
-- Node.js >= 18.0.0
-- One or more supported HTTP libraries
-
-## Related Projects
-
-- **[python-proxy-headers](https://github.com/proxymesh/python-proxy-headers)** - Same functionality for Python
+- [javascript-proxy-headers on Read the Docs](https://javascript-proxy-headers.readthedocs.io/)
 - **[proxy-examples](https://github.com/proxymesh/proxy-examples)** - Example code for using proxies
 
-## About
+## Other languages
 
-Created by [ProxyMesh](https://proxymesh.com) to help our customers use custom headers to control proxy behavior. Works with any proxy that supports custom headers.
+- **[python-proxy-headers](https://github.com/proxymesh/python-proxy-headers)** - Same functionality for Python
+- **[ruby-proxy-headers](https://github.com/proxymesh/ruby-proxy-headers)** - Same functionality for Ruby
+- **[scrapy-proxy-headers](https://github.com/proxymesh/scrapy-proxy-headers)** - Proxy header support for Scrapy spiders
+
+## Why ProxyMesh
+
+[ProxyMesh](https://proxymesh.com) created this library to help customers use custom headers to control proxy behavior, as documented at [docs.proxymesh.com](https://docs.proxymesh.com/). It works with any proxy that supports custom headers on CONNECT.
 
 ## License
 
