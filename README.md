@@ -247,8 +247,7 @@ Verbose (`-v`) prints captured header values. See `test/test_proxy_headers.js --
 ## Documentation
 
 - [JavaScript proxy configuration examples](https://docs.proxymesh.com/article/41-javascript-proxy-configuration-examples)
-- [ProxyMesh request and response headers](https://docs.proxymesh.com/article/7-request-response-headers)
-- [Proxy headers over HTTPS](https://docs.proxymesh.com/article/145-proxy-server-requests-over-https)
+- [ProxyMesh proxy request and response headers](https://docs.proxymesh.com/article/7-request-response-headers), including the custom headers you can send on CONNECT
 - **[proxy-examples](https://github.com/proxymesh/proxy-examples)** - Example code for using proxies
 
 ## Other languages
