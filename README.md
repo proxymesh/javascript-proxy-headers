@@ -67,7 +67,7 @@ response.proxyHeaders.get('x-proxymesh-ip')
 ```javascript
 import { createProxyAxios } from 'javascript-proxy-headers/axios';
 
-const client = createProxyAxios({
+const client = await createProxyAxios({
     proxy: 'http://user:pass@proxy.example.com:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
@@ -96,7 +96,7 @@ console.log(response.proxyHeaders.get('x-proxymesh-ip'));
 ```javascript
 import { createProxyGot } from 'javascript-proxy-headers/got';
 
-const client = createProxyGot({
+const client = await createProxyGot({
     proxy: 'http://user:pass@proxy.example.com:8080',
     proxyHeaders: { 'X-ProxyMesh-Country': 'US' }
 });
@@ -246,7 +246,9 @@ Verbose (`-v`) prints captured header values. See `test/test_proxy_headers.js --
 
 ## Documentation
 
-- [javascript-proxy-headers on Read the Docs](https://javascript-proxy-headers.readthedocs.io/)
+- [JavaScript proxy configuration examples](https://docs.proxymesh.com/article/41-javascript-proxy-configuration-examples)
+- [ProxyMesh request and response headers](https://docs.proxymesh.com/article/7-request-response-headers)
+- [Proxy headers over HTTPS](https://docs.proxymesh.com/article/145-proxy-server-requests-over-https)
 - **[proxy-examples](https://github.com/proxymesh/proxy-examples)** - Example code for using proxies
 
 ## Other languages
